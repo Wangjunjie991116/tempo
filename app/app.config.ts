@@ -13,8 +13,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
   return {
     ...config,
-    name: config.name ?? "app",
-    slug: config.slug ?? "app",
+    name: config.name ?? "轻程",
+    slug: config.slug ?? "qingcheng",
     ios: {
       ...config.ios,
       infoPlist: {

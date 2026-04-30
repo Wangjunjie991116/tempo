@@ -45,7 +45,7 @@ export default function App() {
       <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
         <StatusBar style="dark" />
         <View style={styles.banner}>
-          <Text style={styles.bannerText}>Tempo shell · WebView</Text>
+          <Text style={styles.bannerText}>王俊杰测试</Text>
         </View>
         {showLocalhostHint ? (
           <Text style={styles.hint}>

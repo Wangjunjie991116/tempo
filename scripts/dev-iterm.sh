@@ -20,30 +20,37 @@ if ! osascript -e 'tell application "iTerm" to get name' >/dev/null 2>&1; then
   exit 1
 fi
 
-root_q="$(printf %q "$ROOT")"
-prep="cd ${root_q} && export PATH=\\\"\\\$HOME/.local/bin:\\\$PATH\\\" && test -f \\\"\\\$HOME/.nvm/nvm.sh\\\" && . \\\"\\\$HOME/.nvm/nvm.sh\\\" 2>/dev/null; command -v nvm >/dev/null 2>&1 && nvm use 24 2>/dev/null || true; "
+# 通过环境变量传路径，AppleScript 内用 quoted form of，避免 bash 与 AppleScript 引号转义冲突（此前 \" 会触发 -2741）
+export TEMPO_REPO_ROOT="$ROOT"
 
-osascript <<EOF
-tell application "iTerm"
-    activate
-    create window with default profile
-    tell current session of current window
-        write text "${prep}pnpm dev:service"
-    end tell
-    tell current window
-        create tab with default profile
-    end tell
-    tell current session of current window
-        write text "${prep}pnpm dev:web"
-    end tell
-    tell current window
-        create tab with default profile
-    end tell
-    tell current session of current window
-        write text "${prep}pnpm dev:app"
-    end tell
-end tell
-EOF
+osascript <<'APPLESCRIPT'
+on run
+	set repoPath to (system attribute "TEMPO_REPO_ROOT")
+	if repoPath is missing value or repoPath is "" then
+		error "缺少环境变量 TEMPO_REPO_ROOT"
+	end if
+	set prep to "cd " & quoted form of repoPath & " && export PATH=$HOME/.local/bin:$PATH && test -f $HOME/.nvm/nvm.sh && . $HOME/.nvm/nvm.sh 2>/dev/null; command -v nvm >/dev/null 2>&1 && nvm use 24 2>/dev/null || true; "
+	tell application "iTerm"
+		activate
+		create window with default profile
+		tell current session of current window
+			write text (prep & "pnpm dev:service")
+		end tell
+		tell current window
+			create tab with default profile
+		end tell
+		tell current session of current window
+			write text (prep & "pnpm dev:web")
+		end tell
+		tell current window
+			create tab with default profile
+		end tell
+		tell current session of current window
+			write text (prep & "pnpm dev:app")
+		end tell
+	end tell
+end run
+APPLESCRIPT
 
 echo "已在 iTerm2 新建 1 个窗口（3 个 Tab）：dev:service / dev:web / dev:app"
 echo "项目目录：$ROOT"

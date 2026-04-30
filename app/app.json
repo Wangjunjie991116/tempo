@@ -4,7 +4,7 @@
     "slug": "tempo",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/qingcheng-icon.png",
+    "icon": "./assets/tempo-icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -23,14 +23,14 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/qingcheng-icon.png",
+        "foregroundImage": "./assets/tempo-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/qingcheng-icon.png"
+      "favicon": "./assets/tempo-icon.png"
     },
     "locales": {
       "en": "./languages/en.json",

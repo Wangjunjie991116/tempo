@@ -13,14 +13,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
   return {
     ...config,
-    name: config.name ?? "轻程",
-    slug: config.slug ?? "qingcheng",
+    name: config.name ?? "Tempo",
+    slug: config.slug ?? "tempo",
     ios: {
       ...config.ios,
       infoPlist: {
         ...config.ios?.infoPlist,
         NSLocalNetworkUsageDescription:
-          "Tempo 需要从你的 Mac 加载本地开发页面（WebView），请在提示时允许访问本地网络。",
+          "轻程（Tempo）需要从你的 Mac 加载本地开发页面（WebView），请在提示时允许访问本地网络。",
       },
     },
     extra: {

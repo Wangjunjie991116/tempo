@@ -11,7 +11,7 @@
 
 ## 仓库结构
 
-- `app/`：Expo（`react-native-webview`）
+- **app/**：Expo（react-native-webview）；安装包英文名 **Tempo**，中文名 **轻程**（桌面展示名随系统语言切换：`app/app.json`、`app/languages/`）
 - `web/`：Vue 3 + Vite
 - `service/`：FastAPI
 - `docs/superpowers/`：设计与实施文档

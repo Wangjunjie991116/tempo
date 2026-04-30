@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "轻程",
-    "slug": "qingcheng",
+    "name": "Tempo",
+    "slug": "tempo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/qingcheng-icon.png",
@@ -15,6 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true,
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
         }
@@ -30,6 +31,10 @@
     },
     "web": {
       "favicon": "./assets/qingcheng-icon.png"
+    },
+    "locales": {
+      "en": "./languages/en.json",
+      "zh-Hans": "./languages/zh-Hans.json"
     }
   }
 }

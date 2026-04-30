@@ -50,7 +50,7 @@ async function submit() {
 
 <template>
   <main style="padding: 16px; font-family: system-ui">
-    <h1 style="font-size: 20px">Tempo</h1>
+    <h1 style="font-size: 20px">轻程 · Tempo</h1>
     <textarea v-model="text" rows="4" style="width: 100%; box-sizing: border-box" />
     <div style="margin-top: 8px">
       <button type="button" :disabled="busy || !text.trim()" @click="submit">解析并保存</button>

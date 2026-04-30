@@ -1,18 +1,38 @@
+import Constants from "expo-constants";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 
-const WEB_URL = process.env.EXPO_PUBLIC_WEB_BASE_URL ?? "http://127.0.0.1:5173";
-const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
+type Extra = {
+  tempoWebBaseUrl?: string;
+  tempoApiBaseUrl?: string;
+};
 
-if (__DEV__) {
-  const lower = WEB_URL.toLowerCase();
-  if (lower.includes("127.0.0.1") || lower.includes("localhost")) {
-    console.warn(
-      "[Tempo] WebView URL is localhost. Simulators can use this; physical iPhones must set EXPO_PUBLIC_WEB_BASE_URL (and API) to your Mac LAN IP, same subnet as exp:// in Metro.",
-    );
-  }
+const extra = Constants.expoConfig?.extra as Extra | undefined;
+
+const WEB_URL =
+  (extra?.tempoWebBaseUrl && extra.tempoWebBaseUrl.trim().length > 0
+    ? extra.tempoWebBaseUrl.trim()
+    : null) ??
+  process.env.EXPO_PUBLIC_WEB_BASE_URL ??
+  "http://127.0.0.1:5173";
+
+const API_URL =
+  (extra?.tempoApiBaseUrl && extra.tempoApiBaseUrl.trim().length > 0
+    ? extra.tempoApiBaseUrl.trim()
+    : null) ??
+  process.env.EXPO_PUBLIC_API_BASE_URL ??
+  "http://127.0.0.1:8000";
+
+const showLocalhostHint =
+  __DEV__ &&
+  (WEB_URL.includes("127.0.0.1") || WEB_URL.toLowerCase().includes("localhost"));
+
+if (showLocalhostHint) {
+  console.warn(
+    "[Tempo] WebView URL is localhost. Simulators can use this; physical iPhones need app/.env with EXPO_PUBLIC_* set to your Mac LAN IP. After creating/editing app/.env run: expo start --clear",
+  );
 }
 
 export default function App() {
@@ -27,6 +47,14 @@ export default function App() {
         <View style={styles.banner}>
           <Text style={styles.bannerText}>Tempo shell · WebView</Text>
         </View>
+        {showLocalhostHint ? (
+          <Text style={styles.hint}>
+            当前加载地址：{WEB_URL}
+            {"\n"}
+            真机请到 app 目录创建 .env（可复制 .env.example），把 EXPO_PUBLIC_WEB_BASE_URL /
+            EXPO_PUBLIC_API_BASE_URL 改成 Mac 的局域网 IP，然后执行 expo start --clear 再重载。
+          </Text>
+        ) : null}
         <WebView
           style={styles.web}
           source={{ uri: WEB_URL }}
@@ -50,5 +78,12 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
   },
   bannerText: { fontSize: 12, opacity: 0.7 },
+  hint: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: "crimson",
+    fontSize: 12,
+    backgroundColor: "#fff3f3",
+  },
   web: { flex: 1 },
 });

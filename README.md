@@ -36,7 +36,13 @@ pnpm dev:web
 pnpm dev:app
 ```
 
-复制 `app/.env.example` 为 `app/.env`，将其中地址改为 **电脑的局域网 IP**（真机与电脑同网段时）。`web/.env.development` 同样改为该 IP，以便设备访问 `service` 与 Vite。
+### 真机 WebView（避免 `Could not connect to the server` / -1004）
+
+1. **必须有 `app/.env`**：`.env.example` 不会被自动读取。执行 `cp app/.env.example app/.env`，把其中的 **`127.0.0.1` 改成 Mac 的局域网 IP**（与 Metro 里 `exp://…` 的 IP 一致）。
+2. **`web/.env.development`** 里的 **`VITE_API_BASE_URL`** 同步改成同一 IP。
+3. Mac 上 **`pnpm dev:web`**、**`pnpm dev:service`** 保持运行。
+4. 改完 `.env` 后请在 **`app/`** 目录执行 **`pnpm exec expo start --clear`** 清缓存重启（否则会一直用旧的 localhost）。
+5. iOS 可能弹出 **本地网络** 权限，请选择允许（已在 `app.config.ts` 里补充说明文案）。
 
 ## 文档
 

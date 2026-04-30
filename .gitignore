@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.expo/
+ios/
+android/
+*.pyc
+__pycache__/
+.pytest_cache/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+!.env.development
+.DS_Store

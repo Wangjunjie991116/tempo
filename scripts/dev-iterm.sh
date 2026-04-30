@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# macOS + iTerm2：依次新建 3 个窗口，分别跑 service / web / app。
+# macOS + iTerm2：新建 1 个窗口，内含 3 个 Tab，分别跑 service / web / app。
 # 用法（仓库根目录）：pnpm dev
 #
 # 依赖：已安装 iTerm2（AppleScript 应用名为「iTerm」）；pnpm；可选 nvm；uv 建议在 ~/.local/bin。
@@ -20,28 +20,30 @@ if ! osascript -e 'tell application "iTerm" to get name' >/dev/null 2>&1; then
   exit 1
 fi
 
-launch_iterm_window() {
-  local cmd="$1"
-  local root_q
-  root_q="$(printf %q "$ROOT")"
-  osascript <<EOF
+root_q="$(printf %q "$ROOT")"
+prep="cd ${root_q} && export PATH=\\\"\\\$HOME/.local/bin:\\\$PATH\\\" && test -f \\\"\\\$HOME/.nvm/nvm.sh\\\" && . \\\"\\\$HOME/.nvm/nvm.sh\\\" 2>/dev/null; command -v nvm >/dev/null 2>&1 && nvm use 24 2>/dev/null || true; "
+
+osascript <<EOF
 tell application "iTerm"
     activate
     create window with default profile
     tell current session of current window
-        write text "cd ${root_q} && export PATH=\\\"\\\$HOME/.local/bin:\\\$PATH\\\" && test -f \\\"\\\$HOME/.nvm/nvm.sh\\\" && . \\\"\\\$HOME/.nvm/nvm.sh\\\" 2>/dev/null; command -v nvm >/dev/null 2>&1 && nvm use 24 2>/dev/null || true; ${cmd}"
+        write text "${prep}pnpm dev:service"
+    end tell
+    tell current window
+        create tab with default profile
+    end tell
+    tell current session of current window
+        write text "${prep}pnpm dev:web"
+    end tell
+    tell current window
+        create tab with default profile
+    end tell
+    tell current session of current window
+        write text "${prep}pnpm dev:app"
     end tell
 end tell
 EOF
-}
 
-osascript -e 'tell application "iTerm" to activate' >/dev/null 2>&1 || true
-
-launch_iterm_window "pnpm dev:service"
-sleep 0.35
-launch_iterm_window "pnpm dev:web"
-sleep 0.35
-launch_iterm_window "pnpm dev:app"
-
-echo "已在 iTerm2 打开 3 个窗口：dev:service / dev:web / dev:app"
+echo "已在 iTerm2 新建 1 个窗口（3 个 Tab）：dev:service / dev:web / dev:app"
 echo "项目目录：$ROOT"

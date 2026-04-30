@@ -18,13 +18,13 @@
 
 ## 本地启动
 
-### macOS + iTerm2：一键新开三个窗口（推荐）
+### macOS + iTerm2：一键在同一窗口打开 3 个 Tab（推荐）
 
 ```bash
 pnpm dev
 ```
 
-会在 **iTerm2** 中依次打开 **3 个窗口**，分别执行 `pnpm dev:service`、`pnpm dev:web`、`pnpm dev:app`（脚本：`scripts/dev-iterm.sh`）。
+会在 **iTerm2** 中新建 **1 个窗口**，内含 **3 个 Tab**，分别执行 `pnpm dev:service`、`pnpm dev:web`、`pnpm dev:app`（脚本：`scripts/dev-iterm.sh`）。
 
 若无响应：请在 **系统设置 → 隐私与安全性 → 自动化** 中允许当前应用控制 **iTerm**。未安装 iTerm2 时请先安装：[iterm2.com](https://iterm2.com/)
 

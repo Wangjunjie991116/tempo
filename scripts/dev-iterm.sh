@@ -4,6 +4,9 @@
 #
 # 依赖：已安装 iTerm2（AppleScript 应用名为「iTerm」）；pnpm；可选 nvm；uv 建议在 ~/.local/bin。
 # 若无响应：系统设置 → 隐私与安全性 → 自动化 → 允许 Cursor / 当前终端控制「iTerm」。
+#
+# Tab 标题：脚本对每个 session 执行「set name」，一般显示为 Tempo · service / web / app。
+# 若运行中被 shell 改掉：可在该 Tab 右键 → Edit Session → 勾选锁定标题（视 iTerm 版本而定）。
 
 set -euo pipefail
 
@@ -35,22 +38,25 @@ on run
 		create window with default profile
 		tell current session of current window
 			write text (prep & "pnpm dev:service")
+			set name to "Tempo · service"
 		end tell
 		tell current window
 			create tab with default profile
 		end tell
 		tell current session of current window
 			write text (prep & "pnpm dev:web")
+			set name to "Tempo · web"
 		end tell
 		tell current window
 			create tab with default profile
 		end tell
 		tell current session of current window
 			write text (prep & "pnpm dev:app")
+			set name to "Tempo · app"
 		end tell
 	end tell
 end run
 APPLESCRIPT
 
-echo "已在 iTerm2 新建 1 个窗口（3 个 Tab）：dev:service / dev:web / dev:app"
+echo "已在 iTerm2 新建 1 个窗口（3 个 Tab）：Tempo · service / web / app"
 echo "项目目录：$ROOT"

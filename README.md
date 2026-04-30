@@ -18,6 +18,16 @@
 
 ## 本地启动
 
+### macOS：一键打开三个终端窗口
+
+```bash
+pnpm dev:terminals
+```
+
+会在 **Terminal.app** 中依次打开 3 个窗口并执行 `pnpm dev:service`、`pnpm dev:web`、`pnpm dev:app`（实现见 `scripts/start-dev-terminals.sh`）。若无响应，请到 **系统设置 → 隐私与安全性 → 自动化** 授予权限。
+
+### 手动分别启动（任意终端）
+
 终端 1 — 后端：
 
 ```bash

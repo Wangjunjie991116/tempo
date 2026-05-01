@@ -24,7 +24,7 @@
 pnpm dev
 ```
 
-会在 **iTerm2** 中新建 **1 个窗口**，内含 **3 个 Tab**，分别执行 `pnpm dev:service`、`pnpm dev:web`、`pnpm dev:app`（脚本：`scripts/dev-iterm.sh`）。
+会在 **iTerm2** 中新建 **1 个窗口**，内含 **3 个 Tab**，分别执行 `pnpm dev:service`、`pnpm dev:web`、`pnpm dev:app`（脚本：`scripts/dev-iterm.sh`）。Tab / 窗口标题遵循你在 Profile 里的设置。
 
 若无响应：请在 **系统设置 → 隐私与安全性 → 自动化** 中允许当前应用控制 **iTerm**。未安装 iTerm2 时请先安装：[iterm2.com](https://iterm2.com/)
 

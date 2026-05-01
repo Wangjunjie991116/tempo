@@ -1,0 +1,8 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "轻程"
+  },
+  "android": {
+    "app_name": "轻程"
+  }
+}

@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import "./core/i18n";
 import { TempoThemeProvider } from "./core/theme";
+import { enableAndroidLayoutAnimationExperimental } from "./core/ui/layoutAnimation";
 import {
   AuthNavigationSync,
   navigationRef,
@@ -27,6 +28,10 @@ export default function App() {
     Manrope_500Medium,
     Manrope_600SemiBold,
   });
+
+  useEffect(() => {
+    enableAndroidLayoutAnimationExperimental();
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded) void SplashScreen.hideAsync();

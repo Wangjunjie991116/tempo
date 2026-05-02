@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Fragment, useState } from "react";
+import { Fragment, useCallback, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import {
   Appbar,
@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "../../../core/i18n";
 import type { ScheduleStackParamList } from "../../../core/navigation/types";
 import { useTempoTheme } from "../../../core/theme";
+import { easeListTransition } from "../../../core/ui/layoutAnimation";
 import { NotificationEmptyState } from "../components/NotificationEmptyState";
 import {
   type NotificationSegment,
@@ -28,6 +29,11 @@ export default function NotificationInboxScreen() {
   const [segment, setSegment] = useState<NotificationSegment>("activity");
   const items = useNotificationFeed(segment);
 
+  const onSegmentChange = useCallback((v: string) => {
+    easeListTransition();
+    setSegment(v as NotificationSegment);
+  }, []);
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.screenBg }]} edges={["top", "left", "right"]}>
       <Appbar.Header mode="small" statusBarHeight={0} style={{ backgroundColor: t.screenBg }}>
@@ -41,7 +47,7 @@ export default function NotificationInboxScreen() {
       <View style={[styles.segmentWrap, { paddingHorizontal: t.space.lg }]}>
         <SegmentedButtons
           value={segment}
-          onValueChange={(v) => setSegment(v as NotificationSegment)}
+          onValueChange={onSegmentChange}
           buttons={[
             { value: "activity", label: tr("notifications:segmentActivity") },
             { value: "system", label: tr("notifications:segmentSystem") },

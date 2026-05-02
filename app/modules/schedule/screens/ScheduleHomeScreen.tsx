@@ -1,7 +1,7 @@
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useCallback, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Snackbar } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -9,6 +9,7 @@ import { useTranslation } from "../../../core/i18n";
 import { SCHEDULE_STACK } from "../../../core/navigation/routes";
 import type { ScheduleStackParamList } from "../../../core/navigation/types";
 import { useTempoTheme } from "../../../core/theme";
+import { easeListTransition } from "../../../core/ui/layoutAnimation";
 import type { ScheduleItem } from "../repo/types";
 import { DateStrip } from "../components/DateStrip";
 import { BellIcon } from "../components/icons/BellIcon";
@@ -31,6 +32,7 @@ export default function ScheduleHomeScreen() {
   const [selectedDay, setSelectedDay] = useState(initialSelectedDay);
   const { upcoming, finished } = useScheduleData(selectedDay);
   const [snackVisible, setSnackVisible] = useState(false);
+  const skipFirstListAnim = useRef(true);
 
   const tagLabel = useCallback(
     (item: ScheduleItem) => {
@@ -54,6 +56,19 @@ export default function ScheduleHomeScreen() {
     [tr, finished.length],
   );
 
+  const selectDay = useCallback((d: Date) => {
+    easeListTransition();
+    setSelectedDay(d);
+  }, []);
+
+  useEffect(() => {
+    if (skipFirstListAnim.current) {
+      skipFirstListAnim.current = false;
+      return;
+    }
+    easeListTransition();
+  }, [upcoming.length, finished.length]);
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: t.screenBg }]} edges={["top", "left", "right"]}>
       <ScrollView
@@ -76,6 +91,11 @@ export default function ScheduleHomeScreen() {
             accessibilityRole="button"
             accessibilityLabel={tr("notifications:inboxTitle")}
             onPress={() => navigation.navigate(SCHEDULE_STACK.NotificationInbox)}
+            android_ripple={
+              Platform.OS === "android"
+                ? { color: "rgba(96, 101, 230, 0.14)", borderless: true }
+                : undefined
+            }
             style={({ pressed }) => [styles.bellBtn, { opacity: pressed ? 0.75 : 1 }]}
           >
             <BellIcon size={26} color={t.textPrimary} />
@@ -83,7 +103,7 @@ export default function ScheduleHomeScreen() {
         </View>
 
         <View style={{ marginTop: t.space.md }}>
-          <DateStrip selected={selectedDay} onSelect={setSelectedDay} />
+          <DateStrip selected={selectedDay} onSelect={selectDay} />
         </View>
 
         <View style={{ marginTop: t.space.xl, gap: t.space.md }}>

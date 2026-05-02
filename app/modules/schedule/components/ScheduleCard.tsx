@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useTempoTheme } from "../../../core/theme";
 import type { ScheduleItem } from "../repo/types";
@@ -35,6 +35,11 @@ export function ScheduleCard({ item, tagLabel, variant, onPress }: Props) {
   return (
     <Pressable
       onPress={onPress}
+      android_ripple={
+        Platform.OS === "android"
+          ? { color: "rgba(21, 21, 21, 0.06)", foreground: false }
+          : undefined
+      }
       style={({ pressed }) => [
         styles.card,
         {

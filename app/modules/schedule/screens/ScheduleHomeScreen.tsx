@@ -151,7 +151,7 @@ export default function ScheduleHomeScreen() {
           </View>
           <View style={styles.headerText}>
             <Text style={[styles.greetingHi, { color: t.textPrimary }]}>
-              {tr("schedule:greetingHi", { name: "Gavin" })}
+              {tr("schedule:greetingHi", { name: "Gavin 👋" })}
             </Text>
             <Text style={[styles.goodMorning, { color: t.textPrimary }]}>
               {tr("schedule:goodMorning")}

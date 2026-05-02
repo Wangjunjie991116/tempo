@@ -56,7 +56,7 @@ export function ScheduleDayPage({
         { paddingHorizontal: horizontalPadding, paddingBottom: 32 },
       ]}
     >
-      <View style={{ marginTop: t.space.xl, gap: t.space.md }}>
+      <View style={{ marginTop: t.space.md, gap: t.space.md }}>
         <ScheduleSectionHeader
           title={sectionUpcomingTitle}
           dotColor={t.brand}
@@ -78,7 +78,7 @@ export function ScheduleDayPage({
         ) : null}
       </View>
 
-      <View style={{ marginTop: t.space.xl, gap: t.space.md }}>
+      <View style={{ marginTop: t.space.md, gap: t.space.md }}>
         <ScheduleSectionHeader
           title={sectionFinishedTitle}
           dotColor={t.badge.workshop.fg}

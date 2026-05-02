@@ -72,7 +72,7 @@
 
 ### 5.2 建议存储形态
 
-- Key：`tempo.schedule.v3`（命名空间版本化）；存储/Mock 链路见 [`docs/app-schedule-local-storage.md`](../../app-schedule-local-storage.md)。  
+- Key：`tempo.schedule`（单一持久化键）；存储/Mock 链路见 [`docs/app-schedule-local-storage.md`](../../app-schedule-local-storage.md)。  
 - 内容：`ScheduleItem[]`（含 `id`、`title`、`start`、`end`、`tag`、`status`、`attendees` 等与设计一致的字段）。
 
 ### 5.3 内置默认数据

@@ -4,13 +4,14 @@
 
 | 键 | 用途 |
 |----|------|
-| **`tempo.schedule.v3`** | 持久化 `ScheduleItem[]`（JSON 字符串）。 |
+| **`tempo.schedule`** | 持久化 `ScheduleItem[]`（JSON 字符串）；唯一键。 |
 
 ## 2. 读写逻辑
 
-1. **`loadScheduleItems()`**（`app/modules/schedule/repo/scheduleStorage.ts`）读取上述键。  
-2. 若 **不存在、解析失败或非数组、或数组长度为 0**：将代码内 **`DEFAULT_SCHEDULE_ITEMS`**（`seed.ts`，固定 6 条，锚定 **2026-05-02 UTC**）**克隆后写入** AsyncStorage，并返回该数组。  
-3. 否则返回已存储数组（用户后续可通过仓储接口改写并由 **`saveScheduleItems`** 落盘）。
+1. **`loadScheduleItems()`**（`app/modules/schedule/repo/scheduleStorage.ts`）  
+2. **每次 App 进程启动后第一次调用**：**不判断**库里是否已有数据，一律将 **`DEFAULT_SCHEDULE_ITEMS`**（`seed.ts`，固定 6 条，锚定 **2026-05-02 UTC**）**克隆后写入**上述键并返回（同时删除残留的旧键 **`tempo.schedule.v3`**）。  
+3. **同一会话内后续调用**：读取上述键；若解析失败、非数组或长度为 0，则再次写入默认克隆并返回；否则返回当前数组。  
+4. **`saveScheduleItems`**：覆盖写入当前键（本会话内仍会持久化；**下次冷启动**仍会被步骤 2 重置为默认数据）。
 
 ## 3. 与列表展示的关系
 
@@ -23,4 +24,10 @@
 
 ## 4. 修改默认数据
 
-编辑 **`app/modules/schedule/repo/seed.ts`** 中的 **`DEFAULT_SCHEDULE_ITEMS`**。若要强制重新写入默认数据，删除 App 数据或清空 AsyncStorage 中 **`tempo.schedule.v3`** 后重启。
+编辑 **`app/modules/schedule/repo/seed.ts`** 中的 **`DEFAULT_SCHEDULE_ITEMS`**。下次冷启动第一次加载日程时会自动写入新版本默认数据。
+
+## 5. Expo SDK 与 AsyncStorage 版本
+
+日志若出现 **`AsyncStorageError: Native module is null, cannot access legacy storage`**：多为 **`@react-native-async-storage/async-storage` 3.x** 与当前 **Expo SDK 54 / Expo Go** 原生侧不匹配（v3 默认走 TurboModule / legacy 路径，未就绪时模块为 null）。
+
+**处理方式：** 在 **`app/`** 目录执行 **`pnpm exec expo install @react-native-async-storage/async-storage`**，由 Expo 固定为与 SDK 一致的版本（当前为 **2.2.x**）。更新依赖后请 **`expo start --clear`** 并重新打开 App（若曾生成过原生工程，按需 **`expo run:ios` / `run:android`** 重装）。

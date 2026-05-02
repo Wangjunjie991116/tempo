@@ -21,7 +21,7 @@ export function useScheduleData(selectedDay: Date) {
     const day = new Date(dayMs);
     setLoading(true);
     try {
-      const [u, f] = await Promise.all([repo.listByDay(day), repo.listFinishedByDay(day)]);
+      const { upcoming: u, finished: f } = await repo.listScheduleForDay(day);
       setUpcoming(u);
       setFinished(f);
     } finally {

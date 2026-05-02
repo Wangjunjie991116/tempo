@@ -2,24 +2,9 @@ import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useTempoTheme } from "../../../core/theme";
 import type { ScheduleItem } from "../repo/types";
+import { formatScheduleCardTimeRange } from "../utils/formatScheduleCardTimeRange";
 import { ChevronRightIcon } from "./icons/ChevronRightIcon";
 import { ScheduleTagBadge } from "./ScheduleTagBadge";
-
-function formatRange(startIso: string, endIso: string): string {
-  const opts: Intl.DateTimeFormatOptions = {
-    weekday: "short",
-    month: "2-digit",
-    day: "2-digit",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  };
-  const s = new Date(startIso);
-  const e = new Date(endIso);
-  const left = new Intl.DateTimeFormat("en-US", opts).format(s);
-  const timeFmt = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" });
-  return `${left} · ${timeFmt.format(s)} - ${timeFmt.format(e)}`;
-}
 
 type Props = {
   item: ScheduleItem;
@@ -54,7 +39,7 @@ export function ScheduleCard({ item, tagLabel, variant, onPress }: Props) {
         {item.title}
       </Text>
       <Text style={[styles.meta, { color: t.textMuted }]} numberOfLines={2}>
-        {formatRange(item.startAt, item.endAt)}
+        {formatScheduleCardTimeRange(item.startAt, item.endAt > 0 ? item.endAt : item.startAt)}
       </Text>
       <View style={styles.footer}>
         <AttendeeStack count={item.attendeeCount} overflow={item.attendeeOverflow} color={t.textMuted} />

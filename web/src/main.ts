@@ -1,5 +1,9 @@
-import { createApp } from 'vue'
-import './style.css'
-import App from './App.vue'
+/**
+ * Vue 应用入口：挂载根组件到 `#app`。
+ */
+import { createApp } from "vue";
 
-createApp(App).mount('#app')
+import App from "./App.vue";
+import "./style.css";
+
+createApp(App).mount("#app");

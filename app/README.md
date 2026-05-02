@@ -89,7 +89,8 @@ app/
 │       │   ├── useScheduleData.ts        # 按选中曰加载
 │       │   └── useNotificationFeed.ts    # 通知列表Mock
 │       ├── utils/
-│       │   └── calendarRange.ts          # 日历区间与日键
+│       │   ├── calendarRange.ts          # 日历区间与日键
+│       │   └── formatScheduleCardTimeRange.ts # 卡片时段文案格式
 │       └── repo/
 │           ├── types.ts                  # ScheduleItem 模型
 │           ├── seed.ts                   # 内置演示 JSON

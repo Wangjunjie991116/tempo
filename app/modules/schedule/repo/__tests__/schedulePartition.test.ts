@@ -16,8 +16,8 @@ describe("partitionScheduleForDay", () => {
         id: "u1",
         title: "A",
         tag: "brainstorm",
-        startAt: new Date(2026, 4, 2, 10, 0, 0).toISOString(),
-        endAt: new Date(2026, 4, 2, 11, 0, 0).toISOString(),
+        startAt: new Date(2026, 4, 2, 10, 0, 0).getTime(),
+        endAt: new Date(2026, 4, 2, 11, 0, 0).getTime(),
         status: "upcoming",
         attendeeCount: 2,
       },
@@ -25,8 +25,8 @@ describe("partitionScheduleForDay", () => {
         id: "u2",
         title: "B",
         tag: "brainstorm",
-        startAt: new Date(2026, 4, 3, 10, 0, 0).toISOString(),
-        endAt: new Date(2026, 4, 3, 11, 0, 0).toISOString(),
+        startAt: new Date(2026, 4, 3, 10, 0, 0).getTime(),
+        endAt: new Date(2026, 4, 3, 11, 0, 0).getTime(),
         status: "upcoming",
         attendeeCount: 1,
       },
@@ -42,8 +42,8 @@ describe("partitionScheduleForDay", () => {
         id: "f1",
         title: "Done",
         tag: "workshop",
-        startAt: new Date(2026, 4, 1, 22, 0, 0).toISOString(),
-        endAt: new Date(2026, 4, 2, 9, 0, 0).toISOString(),
+        startAt: new Date(2026, 4, 1, 22, 0, 0).getTime(),
+        endAt: new Date(2026, 4, 2, 9, 0, 0).getTime(),
         status: "finished",
         attendeeCount: 3,
       },
@@ -53,19 +53,19 @@ describe("partitionScheduleForDay", () => {
     expect(finished.map((i) => i.id)).toEqual(["f1"]);
   });
 
-  it("finished falls back to startAt when endAt empty", () => {
+  it("finished falls back to startAt when endAt is zero", () => {
     const items: ScheduleItem[] = [
       {
         id: "f2",
         title: "Legacy",
         tag: "design_review",
-        startAt: new Date(2026, 4, 2, 15, 0, 0).toISOString(),
-        endAt: "",
+        startAt: new Date(2026, 4, 2, 15, 0, 0).getTime(),
+        endAt: 0,
         status: "finished",
         attendeeCount: 1,
       },
     ];
-    const { upcoming, finished } = partitionScheduleForDay(items, anchor);
+    const { finished } = partitionScheduleForDay(items, anchor);
     expect(finished.map((i) => i.id)).toEqual(["f2"]);
   });
 
@@ -75,8 +75,8 @@ describe("partitionScheduleForDay", () => {
         id: "x",
         title: "U",
         tag: "brainstorm",
-        startAt: new Date(2026, 4, 2, 12, 0, 0).toISOString(),
-        endAt: "",
+        startAt: new Date(2026, 4, 2, 12, 0, 0).getTime(),
+        endAt: 0,
         status: "upcoming",
         attendeeCount: 1,
       },

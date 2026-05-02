@@ -40,7 +40,13 @@ export function sameLocalDay(a: Date, b: Date): boolean {
 /**
  * 日历条可滚动区间的边界：**前年 1 月 1 日**～**次年 12 月 31 日**（本地），公历年取当前设备的年份。
  *
- * @example 若当前为 2026 年，则 min≈2025-01-01，max≈2027-12-31（均为本地 0 点）
+ * @example
+ * ```ts
+ * // 若运行设备本地年为 2026：
+ * const { min, max } = stripCalendarBounds();
+ * localDayKey(min); // => "2025-01-01"
+ * localDayKey(max); // => "2027-12-31"
+ * ```
  */
 export function stripCalendarBounds(): { min: Date; max: Date } {
   const y = new Date().getFullYear();

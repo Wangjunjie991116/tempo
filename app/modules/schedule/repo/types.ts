@@ -2,19 +2,20 @@
 export type ScheduleTag = "design_review" | "workshop" | "brainstorm";
 
 /**
- * 单条日程持久化模型（AsyncStorage JSON 数组元素）。
+ * 单条日程持久化模型（AsyncStorage JSON 数组元素 / 未来数据库行）。
  *
- * - **`startAt` / `endAt`**：ISO 8601 字符串；展示与「自然日」分区时使用 **设备本地时区** 解析。
- * - **`status`**：`upcoming` 列表只展示未完成；`finished` 展示已完成（分区规则见 `schedulePartition`）。
+ * - **`startAt` / `endAt`**：**Unix 毫秒时间戳**（`number`），为唯一真源；UI 用 `new Date(ms)` 或统一格式化函数呈现。
+ * - **`endAt`**：非正或缺失（读库兼容）时，已完成分区与展示回退逻辑按 `startAt` 处理。
+ * - **`status`**：`upcoming` / `finished`，分区见 `schedulePartition`。
  */
 export interface ScheduleItem {
   id: string;
   title: string;
   tag: ScheduleTag;
-  /** 开始时间，ISO 8601（例：`2026-05-02T09:00:00.000Z`） */
-  startAt: string;
-  /** 结束时间；已完成条目分区时优先按该字段所在本地日归档 */
-  endAt: string;
+  /** 开始时刻，Unix 毫秒 */
+  startAt: number;
+  /** 结束时刻，Unix 毫秒；`0` 表示未设置（已完成归档时用 `startAt`） */
+  endAt: number;
   status: "upcoming" | "finished";
   attendeeCount: number;
   attendeeOverflow?: number;

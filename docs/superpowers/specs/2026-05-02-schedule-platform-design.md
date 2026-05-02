@@ -46,6 +46,7 @@ listScheduleForDay(day: LocalCalendarDay): Promise<{ upcoming: ScheduleRecord[];
 
 - **事实来源**：设备本地 JSON 数组（AsyncStorage 或后继 SQLite）。  
 - **存储**：AsyncStorage 键 **`tempo.schedule`**（唯一键）；详见 [`docs/app-schedule-local-storage.md`](../../app-schedule-local-storage.md)。  
+- **RN 实现约定**：`ScheduleItem` 的 **`startAt` / `endAt`** 以 **Unix 毫秒（number）** 为持久化真源；**展示**必须由毫秒转换；读库若遇旧 **ISO 字符串**在读路径归一成毫秒。卡片副标题**不出现星期**；同日 `YYYY/M/D HH:mm - HH:mm`，跨自然日 `YYYY/M/D HH:mm - YYYY/M/D HH:mm`。  
 - **与服务的关系**：HTTP 仅用于 **解析等无状态调用**；**不向服务端上传完整日程库**，除非未来用户明确选择的新能力（不在本规格范围）。
 
 ### 2.3 UI：区块标题
@@ -154,7 +155,7 @@ listScheduleForDay(day: LocalCalendarDay): Promise<{ upcoming: ScheduleRecord[];
 
 ## 7. 内置默认日程（代码常量）
 
-- **`DEFAULT_SCHEDULE_ITEMS`**：4 upcoming + 2 finished，写死在 `seed.ts`，ISO 锚定 **2026-05-02**。  
+- **`DEFAULT_SCHEDULE_ITEMS`**：4 upcoming + 2 finished，写死在 `seed.ts`，以 **毫秒戳** 锚定 **2026-05-02（UTC 语义）**。  
 - **`loadScheduleItems`**：**每次 App 进程启动后的首次调用**一律将 **`DEFAULT_SCHEDULE_ITEMS`** 克隆写入 **`tempo.schedule`**（覆盖已有内容）；同进程内后续调用则读取当前存储（若为空则再写入默认）；本会话内的 **`saveScheduleItems`** 仍可落盘，但**下次冷启动**仍会被首次加载重置为默认。
 
 ---

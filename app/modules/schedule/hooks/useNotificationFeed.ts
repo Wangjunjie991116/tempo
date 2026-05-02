@@ -1,7 +1,9 @@
 import { useMemo } from "react";
 
+/** 通知收件箱 Tab 分段标识。 */
 export type NotificationSegment = "activity" | "system";
 
+/** Mock 通知列表中的一行（与设计稿收件箱条目同源字段）。 */
 export interface NotificationRow {
   id: string;
   title: string;

@@ -6,6 +6,7 @@
     "node": ">=24"
   },
   "scripts": {
+    "sync:lan-env": "bash scripts/sync-dev-lan-env.sh",
     "dev": "bash scripts/dev-iterm.sh",
     "dev:web": "pnpm --filter web dev",
     "dev:app": "pnpm --filter app start",

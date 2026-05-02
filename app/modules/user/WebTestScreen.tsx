@@ -17,8 +17,8 @@ export default function WebTestScreen() {
         <Text style={styles.hint}>
           当前加载地址：{TEMPO_WEB_URL}
           {"\n"}
-          真机请到 app/.env 配置 EXPO_PUBLIC_WEB_BASE_URL / EXPO_PUBLIC_API_BASE_URL 为 Mac 局域网
-          IP，执行 expo start --clear。
+          真机在仓库根目录执行 pnpm sync:lan-env（会创建/更新 app/.env.dev），或手动配置
+          EXPO_PUBLIC_* 为 Mac 局域网 IP，然后 expo start --clear。
         </Text>
       ) : null}
       <WebView

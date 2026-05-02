@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 将 `app` 从「全屏 WebView + 开屏遮罩」演进为 **React Navigation 主导的原生应用**：底部 Tab（日程 / 资产 / 我），`core/navigation` 集中维护路由名与 `linking`；**当前 Web 仅作为调试用途**，放在 **`modules/user`** 中经「测试」入口进入全屏 WebView（沿用现有 `EXPO_PUBLIC_WEB_BASE_URL` / `extra` 与 `__TEMPO_CONFIG__` 注入逻辑）。
+**Goal:** 将 `app` 从「全屏 WebView + 开屏遮罩」演进为 **React Navigation 主导的原生应用**：底部 Tab（日程 / 资产 / 我），`core/navigation` 集中维护路由名与 `linking`；**当前 Web 仅作为调试用途**，放在 **`modules/user`** 中经「测试」入口进入全屏 WebView（沿用现有 `EXPO_PUBLIC_WEB_BASE_URL` / `extra` 与 `__TEMPO_CONFIG__` 注入逻辑）。开发期局域网地址可由仓库根目录 **`pnpm sync:lan-env`** 写入 **`app/.env.dev`**。
 
 **Architecture:** 单仓竖切：`app/modules/*` 禁止互引；`app/core/navigation` 为路由与 URL scheme 唯一真源；`app/core/session` 提供最小登录态（首版可用占位按钮完成门禁演示）。开屏可保留为根栈首屏，结束后 `replace` 到 Auth 或 Main。主导航为 **Native Stack（根） + Bottom Tabs（Main）**；`用户` Tab 内使用 **嵌套 Native Stack**，以便从「我」Push 到 WebView 测试页并支持返回。
 

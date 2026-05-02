@@ -12,7 +12,7 @@ export const TEMPO_WEB_URL =
     ? extra.tempoWebBaseUrl.trim()
     : null) ??
   process.env.EXPO_PUBLIC_WEB_BASE_URL ??
-  "http://127.0.0.1:5173";
+  "http://127.0.0.1:5174";
 
 export const TEMPO_API_URL =
   (extra?.tempoApiBaseUrl && extra.tempoApiBaseUrl.trim().length > 0
@@ -32,6 +32,6 @@ export const TEMPO_SHOW_LOCALHOST_WEB_HINT =
 
 if (TEMPO_SHOW_LOCALHOST_WEB_HINT) {
   console.warn(
-    "[Tempo] WebView URL is localhost. Simulators can use this; physical iPhones need app/.env with EXPO_PUBLIC_* set to your Mac LAN IP. After creating/editing app/.env run: expo start --clear",
+    "[Tempo] WebView URL is localhost. Simulators can use this; physical iPhones: run `pnpm sync:lan-env` at repo root (updates app/.env.dev) or set EXPO_PUBLIC_* to your Mac LAN IP, then expo start --clear",
   );
 }

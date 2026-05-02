@@ -56,7 +56,7 @@ tempo/
 
 1. **启动**：`app` 启动 → `WebView` 加载 `WEB_BASE_URL`（来自环境变量，如 `EXPO_PUBLIC_WEB_BASE_URL`）。
 2. **竖切路径**：Web 内输入文本 → `fetch` **`service`** 的 **`POST /api/v1/schedule/parse`** → 收到 envelope → 若 `code === 0`，将 **`data`（日程草稿）** 经 `ScheduleRepository` 写入 **localStorage** → UI 刷新列表。
-3. **配置**：`API_BASE_URL` 建议由 RN **注入 WebView**（如 `window.__TEMPO_CONFIG__`）或与 Web **构建期 `.env`** 对齐，避免嵌入与浏览器直连两套分支失控。
+3. **配置**：`API_BASE_URL` 建议由 RN **注入 WebView**（如 `window.__TEMPO_CONFIG__`）或与 Web **开发期 `web/.env.dev`（`vite --mode dev`）** 对齐，避免嵌入与浏览器直连两套分支失控。
 4. **CORS**：`service` 为 Web 来源放开必要 origin（开发：Vite；生产：静态站点域名）。
 5. **真机调试**：解析接口若使用 **HTTP + 局域网 IP**，需在 Expo/iOS 处理 **ATS（明文 HTTP）** 等例外；**生产环境对外接口应为 HTTPS**。
 

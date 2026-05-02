@@ -16,10 +16,12 @@
 
 | 路径 | 职责 |
 |------|------|
-| `package.json` | 根 workspace 元数据、`engines`、聚合脚本 |
+| `package.json` | 根 workspace 元数据、`engines`、聚合脚本（含 **`pnpm sync:lan-env`**、`pnpm dev` → `dev-iterm.sh`） |
 | `pnpm-workspace.yaml` | workspace：`app`、`web` |
 | `.nvmrc` | `24` |
 | `.gitignore` | Node/Python/Expo 通用忽略（若已存在则合并） |
+| `scripts/sync-dev-lan-env.sh` | 写入 **`web/.env.dev`** / **`app/.env.dev`** 局域网 URL（`pnpm sync:lan-env`；`pnpm dev` 前自动执行） |
+| `scripts/dev-iterm.sh` | macOS iTerm2 三 Tab 启动 |
 | `service/pyproject.toml` | FastAPI、uvicorn、pydantic、pytest、httpx |
 | `service/app/main.py` | FastAPI 实例、CORS、`traceId` 中间件、路由挂载 |
 | `service/app/schemas.py` | `ScheduleDraft`、`ApiEnvelope` |
@@ -32,10 +34,10 @@
 | `web/src/repos/scheduleRepo.ts` | localStorage 读写 + 列表 |
 | `web/src/App.vue` | 输入框、按钮、列表、错误提示 |
 | `web/src/vite-env.d.ts` | `ImportMetaEnv` 补全 |
-| `web/.env.development` | `VITE_API_BASE_URL` |
+| `web/.env.dev` | `VITE_API_BASE_URL`（`vite --mode dev` 加载；`pnpm sync:lan-env` 可生成） |
 | `web/src/repos/scheduleRepo.test.ts` | Vitest |
 | `web/vitest.config.ts` | Vitest 配置 |
-| `app/` | `pnpm create expo-app` 后改 `App.tsx`、安装 webview、`.env` |
+| `app/` | `pnpm create expo-app` 后改 `App.tsx`、安装 webview；可选 `.env` + `.env.dev`（局域网由 `pnpm sync:lan-env` 维护） |
 | `app/app.config.ts` 或 `app.json` | `extra` / scheme（按需） |
 | `README.md` | 人类可读：三端启动顺序、局域网 IP、ATS 提示 |
 
@@ -376,7 +378,7 @@ git commit -m "feat(service): add mock POST /api/v1/schedule/parse with envelope
 - Create: `web/src/api/parseSchedule.ts`
 - Create: `web/src/repos/scheduleRepo.ts`
 - Create: `web/src/repos/scheduleRepo.test.ts`
-- Create: `web/.env.development`
+- Create: `web/.env.dev`（配合 `web/package.json` 中 `vite --mode dev`）
 - Modify: `web/package.json`（加 vitest、jsdom、@vue/test-utils 如需）
 - Modify: `web/vite.config.ts`（test 配置）
 - Modify: `web/src/App.vue`
@@ -549,13 +551,13 @@ pnpm --filter web test
 
 Expected: **PASS**。
 
-- [ ] **Step 8: 环境文件 `web/.env.development`**
+- [ ] **Step 8: 环境文件 `web/.env.dev`**
 
 ```
 VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-真机调试 WebView 时改为电脑局域网 IP（与 Expo 设备同一网段），例如 `http://192.168.1.10:8000`。
+开发时使用 **`pnpm dev:web`**（Vite **`--mode dev`**）才会加载本文件。真机调试可在仓库根执行 **`pnpm sync:lan-env`**，自动创建/更新 **`web/.env.dev`** 与 **`app/.env.dev`** 中的局域网 IP（与 Expo 设备同一网段）；亦可手动改为例如 `http://192.168.1.10:8000`。
 
 - [ ] **Step 9: 替换 `web/src/App.vue`（竖切最小 UI）**
 
@@ -650,7 +652,7 @@ git commit -m "feat(web): vue vite UI with parse client and local storage"
 - Create: `app/` 通过 Expo 脚手架
 - Modify: `app/App.tsx`（或生成的主入口）
 - Modify: `app/package.json`（依赖）
-- Create: `app/.env`（Expo 读取 `EXPO_PUBLIC_*`）
+- Create: 可选 `app/.env`；局域网真机推荐根目录 **`pnpm sync:lan-env`** 维护 **`app/.env.dev`**（`app.config.ts` 已 `loadEnv` 且后者覆盖同名变量）
 
 - [ ] **Step 1: 脚手架**
 
@@ -668,14 +670,14 @@ pnpm install
 pnpm --filter app add react-native-webview
 ```
 
-- [ ] **Step 3: 配置环境 `app/.env`（开发示例；IP 换成你的局域网地址）**
+- [ ] **Step 3: 配置环境 `app/.env` / `app/.env.dev`（开发示例；IP 换成你的局域网地址）**
 
 ```
-EXPO_PUBLIC_WEB_BASE_URL=http://192.168.1.10:5173
+EXPO_PUBLIC_WEB_BASE_URL=http://192.168.1.10:5174
 EXPO_PUBLIC_API_BASE_URL=http://192.168.1.10:8000
 ```
 
-说明：`WEB` 指向 Vite `--host`；`API` 与 `web/.env.development` 保持一致，供注入。
+说明：`WEB` 指向 Vite **`--host`**（默认端口 **5174**）；`API` 与 **`web/.env.dev`** 中 `VITE_API_BASE_URL` 保持一致，供注入。日常可用仓库根 **`pnpm sync:lan-env`** 同步 **`app/.env.dev`**。
 
 安装 expo env（若模板未内置）：
 
@@ -693,7 +695,7 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { WebView } from "react-native-webview";
 
-const WEB_URL = process.env.EXPO_PUBLIC_WEB_BASE_URL ?? "http://127.0.0.1:5173";
+const WEB_URL = process.env.EXPO_PUBLIC_WEB_BASE_URL ?? "http://127.0.0.1:5174";
 const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
 
 export default function App() {
@@ -780,7 +782,7 @@ git commit -m "feat(app): expo webview shell with injected API base URL"
 2. 前端：`pnpm dev:web`（需在局域网可访问时请使用脚本中的 `--host`）
 3. 客户端：`pnpm dev:app`
 
-真机调试时，将 `web/.env.development` 与 `app/.env` 中的地址改为 **电脑的局域网 IP**（与手机同一网段），并保证手机和电脑可互通。
+真机调试时，在仓库根执行 **`pnpm sync:lan-env`** 更新 **`web/.env.dev`** 与 **`app/.env.dev`**，或手动将其中地址改为 **电脑的局域网 IP**（与手机同一网段），并保证手机和电脑可互通。
 
 ## 文档
 

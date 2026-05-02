@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # macOS + iTerm2：新建 1 个窗口，内含 3 个 Tab，分别跑 service / web / app。
 # 用法（仓库根目录）：pnpm dev
+# 开 Tab 前执行 scripts/sync-dev-lan-env.sh，同步 web/.env.dev、app/.env.dev 局域网 URL。
 #
 # 依赖：已安装 iTerm2（AppleScript 应用名为「iTerm」）；pnpm；可选 nvm；uv 建议在 ~/.local/bin。
 # 若无响应：系统设置 → 隐私与安全性 → 自动化 → 允许 Cursor / 当前终端控制「iTerm」。
@@ -21,6 +22,8 @@ if ! osascript -e 'tell application "iTerm" to get name' >/dev/null 2>&1; then
 fi
 
 export TEMPO_REPO_ROOT="$ROOT"
+
+bash "$SCRIPT_DIR/sync-dev-lan-env.sh"
 
 osascript <<'APPLESCRIPT'
 on run

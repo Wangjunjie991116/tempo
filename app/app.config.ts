@@ -6,6 +6,7 @@ const appRoot = __dirname;
 
 loadEnv({ path: path.join(appRoot, ".env"), override: true });
 loadEnv({ path: path.join(appRoot, ".env.local"), override: true });
+loadEnv({ path: path.join(appRoot, ".env.dev"), override: true });
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const web = process.env.EXPO_PUBLIC_WEB_BASE_URL ?? "";

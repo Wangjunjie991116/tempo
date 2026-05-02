@@ -24,7 +24,7 @@
 pnpm dev
 ```
 
-会在 **iTerm2** 中新建 **1 个窗口**，内含 **3 个 Tab**，分别执行 `pnpm dev:service`、`pnpm dev:web`、`pnpm dev:app`（脚本：`scripts/dev-iterm.sh`）。Tab / 窗口标题遵循你在 Profile 里的设置。
+会在 **iTerm2** 中新建 **1 个窗口**，内含 **3 个 Tab**，分别执行 `pnpm dev:service`、`pnpm dev:web`、`pnpm dev:app`（脚本：`scripts/dev-iterm.sh`）。**打开 Tab 之前**会先执行 **`pnpm sync:lan-env`**，创建/更新 **`web/.env.dev`** 与 **`app/.env.dev`** 中的局域网 URL。Tab / 窗口标题遵循你在 Profile 里的设置。
 
 若无响应：请在 **系统设置 → 隐私与安全性 → 自动化** 中允许当前应用控制 **iTerm**。未安装 iTerm2 时请先安装：[iterm2.com](https://iterm2.com/)
 
@@ -50,10 +50,12 @@ pnpm dev:app
 
 ### 真机 WebView（避免 `Could not connect to the server` / -1004）
 
-1. **必须有 `app/.env`**：`.env.example` 不会被自动读取。执行 `cp app/.env.example app/.env`，把其中的 **`127.0.0.1` 改成 Mac 的局域网 IP**（与 Metro 里 `exp://…` 的 IP 一致）。
-2. **`web/.env.development`** 里的 **`VITE_API_BASE_URL`** 同步改成同一 IP。
+1. 在仓库根目录执行 **`pnpm sync:lan-env`**（仅开 Web/App 时也请先执行一次）。脚本会**自动创建**缺失的 **`web/.env.dev`** / **`app/.env.dev`**，并写入当前机器的局域网 IP（**`VITE_API_BASE_URL`**、**`EXPO_PUBLIC_WEB_BASE_URL`**、**`EXPO_PUBLIC_API_BASE_URL`**）。  
+   - Web：`pnpm dev:web` 使用 Vite **`--mode dev`**，开发时读取 **`web/.env.dev`**。  
+   - App：`app.config.ts` 会加载 **`.env`**、**`.env.local`**、**`.env.dev`**（后者覆盖同名变量）。
+2. （可选）复制 **`app/.env.example`** 为 **`app/.env`** 作为默认占位；真机仍以 **`.env.dev`** 中的局域网地址为准。
 3. Mac 上 **`pnpm dev:web`**、**`pnpm dev:service`** 保持运行。
-4. 改完 `.env` 后请在 **`app/`** 目录执行 **`pnpm exec expo start --clear`** 清缓存重启（否则会一直用旧的 localhost）。
+4. 修改环境变量后请在 **`app/`** 目录执行 **`pnpm exec expo start --clear`** 清缓存重启（否则会一直用旧的缓存配置）。
 5. iOS 可能弹出 **本地网络** 权限，请选择允许（已在 `app.config.ts` 里补充说明文案）。
 
 ## 文档

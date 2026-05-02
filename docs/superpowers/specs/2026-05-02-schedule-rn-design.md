@@ -4,6 +4,8 @@
 **状态：** 已冻结产品与技术决策（实现前若变更须更新本文）  
 **范围：** Expo `app/` 内原生日程 Tab + 通知收件箱；**不包含** WebView 内日程页。
 
+**架构补充（按选中日聚合列表、Service 契约、横滑换日、语音确认前不落库）：** 见 [`2026-05-02-schedule-platform-design.md`](./2026-05-02-schedule-platform-design.md)。
+
 ---
 
 ## 1. 目标与非目标

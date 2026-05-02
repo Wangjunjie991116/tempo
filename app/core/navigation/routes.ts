@@ -14,6 +14,11 @@ export const MAIN_TAB = {
   User: "UserTab",
 } as const;
 
+export const SCHEDULE_STACK = {
+  ScheduleHome: "ScheduleHome",
+  NotificationInbox: "NotificationInbox",
+} as const;
+
 export const USER_STACK = {
   UserHome: "UserHome",
   UserWebTest: "UserWebTest",

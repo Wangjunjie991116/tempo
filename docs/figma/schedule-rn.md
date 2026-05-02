@@ -3,77 +3,70 @@
 **规格来源：** [`docs/superpowers/specs/2026-05-02-schedule-rn-design.md`](../superpowers/specs/2026-05-02-schedule-rn-design.md)  
 **实施计划（含 MCP 对照步骤）：** [`docs/superpowers/plans/2026-05-02-schedule-rn-implementation.md`](../superpowers/plans/2026-05-02-schedule-rn-implementation.md)
 
-历史对话与规格中约定的设计稿节点大意如下。**一键直达**见下节「一键直达链接」：已将 `node-id` 按 Figma URL 规则拼入（冒号改为连字符）；仅需替换占位文件 ID 后即可点击打开。
+**Figma 文件：** [`日程`](https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B) · **fileKey：** `EvZSYclUAsOszMPa0boDDj`
+
+下文「官方链接」为对话中提供的 **完整 URL**（含 `node-id` 等参数），可直接点击或复制使用。
 
 ---
 
-## 一键直达链接（参数已拼接）
+## 整体项目入口
 
-下表及列表中的 **`TEMP_SCHEDULE_FIGMA_FILE_KEY`** 为占位符。请在本文件中 **全文查找替换** 为你的真实 **文件 ID**：打开 Figma 设计稿，复制浏览器地址，其中 `https://www.figma.com/design/` **之后、下一个 `/` 之前** 的那段字符串（示例：`https://www.figma.com/design/AbCdEfGh1234567890xyz/My-File` → ID 为 `AbCdEfGh1234567890xyz`）。
+| 说明 | 链接 |
+|------|------|
+| 整体项目参考（节点 `8142:3275`） | [在 Figma 中打开](https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8142-3275&t=nc0Mi4p8KtcfY42i-0) |
 
-替换完成后，下列 Markdown 链接即为可直接访问的节点链接。
+> 若链接失效，请核对 Figma 是否移动文件；`fileKey` 仍为 `EvZSYclUAsOszMPa0boDDj`。
 
-| 说明 | 打开节点 |
-|------|----------|
-| 日程首页（全屏，`8111:3433`） | [在 Figma 中打开](https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8111-3433) |
-| 日程首页（视口，`8204:3164`） | [在 Figma 中打开](https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8204-3164) |
-| 通知界面 A（`8111:3850`） | [在 Figma 中打开](https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8111-3850) |
-| 通知界面 B（`8111:3912`） | [在 Figma 中打开](https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8111-3912) |
-| 通知空状态（`8111:3945`） | [在 Figma 中打开](https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8111-3945) |
-| 变量 / Token 源（`1:181`） | [在 Figma 中打开](https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=1-181) |
+---
 
-**纯文本（便于复制到浏览器或 IM）：**
+## 节点直达链接（官方）
+
+| # | 说明 | 节点 | 打开 |
+|---|------|------|------|
+| 1 | 设计令牌 / 变量封装来源 | `1:181` → `1-181` | [在 Figma 中打开](https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=1-181) |
+| 2 | 日程板块 — **全屏**呈现 | `8111:3433` | [在 Figma 中打开](https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8111-3433&t=nc0Mi4p8KtcfY42i-4) |
+| 3 | 日程板块 — **视口**呈现 | `8204:3164` | [在 Figma 中打开](https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8204-3164&t=nc0Mi4p8KtcfY42i-4) |
+| 4 | 日程右上角 — **消息**板块 | `8111:3850` | [在 Figma 中打开](https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8111-3850&t=nc0Mi4p8KtcfY42i-4) |
+| 5 | 日程右上角 — **通知**板块 | `8111:3912` | [在 Figma 中打开](https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8111-3912&t=nc0Mi4p8KtcfY42i-4) |
+| 6 | **消息为空**时的展示 | `8111:3945` | [在 Figma 中打开](https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8111-3945&t=nc0Mi4p8KtcfY42i-4) |
+
+**复制用（纯文本）：**
 
 ```text
-https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8111-3433
-https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8204-3164
-https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8111-3850
-https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8111-3912
-https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8111-3945
-https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=1-181
+https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8142-3275&t=nc0Mi4p8KtcfY42i-0
+https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=1-181
+https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8111-3433&t=nc0Mi4p8KtcfY42i-4
+https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8204-3164&t=nc0Mi4p8KtcfY42i-4
+https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8111-3850&t=nc0Mi4p8KtcfY42i-4
+https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8111-3912&t=nc0Mi4p8KtcfY42i-4
+https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8111-3945&t=nc0Mi4p8KtcfY42i-4
 ```
-
-（将每行里的 `TEMP_SCHEDULE_FIGMA_FILE_KEY` 换成同一真实文件 ID 即可。）
 
 ---
 
-## 节点对照表
+## 节点对照表（与实现对齐）
 
 | 节点 ID（Figma） | `node-id`（URL） | 大意 | 实现侧对应 |
 |------------------|------------------|------|------------|
-| `8111:3433` | `8111-3433` | 日程首页 — **全屏**构图 | `ScheduleHomeScreen`、日期条 + Today / Finished 整体布局 |
-| `8204:3164` | `8204-3164` | 日程首页 — **视口**（viewport）构图 | 与安全区/滚动视口相关的间距与裁切对齐 |
-| `8111:3850` | `8111-3850` | 通知相关界面（其一） | `NotificationInbox`：列表 / Segment 一侧视觉 |
-| `8111:3912` | `8111-3912` | 通知相关界面（其二） | Segment 另一分类下的列表视觉（与 `3850` 成对对照） |
-| `8111:3945` | `8111-3945` | **通知空状态** | `NotificationEmptyState` |
-| `1:181` | `1-181` | **变量集合**（Design tokens / variables） | `app/core/theme/tokens.ts`、`semantic.ts` 数值溯源 |
-
----
-
-## 直达链接模板
-
-将 `<FILE_KEY>` 替换为本文件在 Figma 中的文件 ID：
-
-```text
-https://www.figma.com/design/<FILE_KEY>?node-id=8111-3433   # 日程首页（全屏）
-https://www.figma.com/design/<FILE_KEY>?node-id=8204-3164   # 日程首页（视口）
-https://www.figma.com/design/<FILE_KEY>?node-id=8111-3850   # 通知界面 A
-https://www.figma.com/design/<FILE_KEY>?node-id=8111-3912   # 通知界面 B
-https://www.figma.com/design/<FILE_KEY>?node-id=8111-3945   # 通知空状态
-https://www.figma.com/design/<FILE_KEY>?node-id=1-181       # 变量 / Token 源
-```
+| `8142:3275` | `8142-3275` | 整体项目参考帧 | 信息架构 / 总览 |
+| `8111:3433` | `8111-3433` | 日程 — **全屏** | `ScheduleHomeScreen` 整体布局 |
+| `8204:3164` | `8204-3164` | 日程 — **视口** | 安全区 / 滚动视口间距 |
+| `8111:3850` | `8111-3850` | 右上角 **消息**面板 | `NotificationInbox` Segment 一侧 |
+| `8111:3912` | `8111-3912` | 右上角 **通知**面板 | Segment 另一侧 |
+| `8111:3945` | `8111-3945` | **空状态** | `NotificationEmptyState` |
+| `1:181` | `1-181` | 设计令牌 / 变量 | `app/core/theme/tokens.ts`、`semantic.ts` |
 
 ---
 
 ## 规格摘要（与节点关系）
 
-- **日程首页**：高还原目标框在 `8111:3433`（全屏）与 `8204:3164`（视口）；实现以 token + 手写组件为主，Paper 不扛日程卡片本体。
-- **通知**：单一铃铛进收件箱；**Segment 两段**对应两套列表视觉（`8111:3850` / `8111:3912`），语义上统称「通知」频道。
-- **空状态**：对齐 `8111:3945`。
-- **主题**：light only；变量对齐 `1:181`，dark 仅占位。
+- **日程首页**：全屏 `8111:3433`、视口 `8204:3164`；卡片与时间轴等为手写组件，Paper 不替代日程卡片本体。
+- **铃铛入口**：收件箱内 Segment 两段对应 **消息** `8111:3850` 与 **通知** `8111:3912`（产品规格中语义可统称「通知」，视觉仍以稿为准）。
+- **空状态：** `8111:3945`。
+- **主题：** light；变量源 `1:181`。
 
 ---
 
-## 验收提示（来自实施计划）
+## 验收提示
 
-手动验收时可对照上述节点核对 **间距与字号**；自动化拉稿可使用 MCP（如 `get_design_context`）针对表中节点批量导出上下文。
+手动对照上述链接核对间距与字号；自动化可用 MCP（如 `get_design_context`）按节点拉取上下文。

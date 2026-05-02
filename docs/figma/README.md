@@ -1,27 +1,21 @@
 # Figma 索引（Tempo）
 
-本目录沉淀设计稿 **节点 ID、版面大意与可追溯链接写法**，便于检索；完整产品与交互决策仍以 `docs/superpowers/specs/` 为准。
+本目录沉淀设计稿 **节点 ID、版面大意与可点击链接**；完整产品与交互决策仍以 `docs/superpowers/specs/` 为准。
 
 ## 文档一览
 
 | 文档 | 说明 |
 |------|------|
-| [schedule-rn.md](./schedule-rn.md) | 日程 Tab + 通知收件箱（RN）；含 **一键直达链接**（占位文件 ID 替换后即可点开） |
+| [schedule-rn.md](./schedule-rn.md) | 日程稿 **EvZSYclUAsOszMPa0boDDj**（《日程》）：整体入口、设计令牌、全屏/视口、消息/通知面板、空状态等 **完整 Figma URL** |
 
-## 如何打开节点
+## 如何自行拼接链接
 
-1. 在浏览器打开团队 Figma 文件，地址形如：  
-   `https://www.figma.com/design/<FILE_KEY>/<文件名>?...`
-2. 将 `<FILE_KEY>` 与下文各表中的 **`node-id`** 组合即可直达节点（Figma 使用 **连字符** 替代冒号）：
+同一文件内换节点时，可替换查询参数中的 `node-id`（Figma 用 **连字符**：`8111:3433` → `node-id=8111-3433`）：
 
 ```text
-https://www.figma.com/design/<FILE_KEY>?node-id=<NODE_ID>
+https://www.figma.com/design/<FILE_KEY>/<文件名>?node-id=<NODE_ID>
 ```
-
-示例：`8111:3433` → URL 参数写为 `node-id=8111-3433`。
-
-若未知 `FILE_KEY`，在 Figma 中选中对应画板/帧 → **Share → Copy link**，链接里即包含 `fileKey` 与 `node-id`。
 
 ## MCP / 设计对齐
 
-实施计划中抛光步骤提到使用 MCP **`get_design_context`** 等能力按节点拉标注；节点列表见各子文档「节点对照表」。
+实施计划中抛光步骤可使用 MCP **`get_design_context`** 等按节点拉标注；节点列表见各子文档。

@@ -1,0 +1,8 @@
+{
+  "inboxTitle": "Notifications",
+  "segmentActivity": "Activity",
+  "segmentSystem": "System",
+  "emptyTitle": "No notifications yet",
+  "emptySubtitle": "You're all caught up.",
+  "listMockTitle": "Sample notification"
+}

@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { SCHEDULE_SEED_EN } from "./seed";
+import { buildScheduleSeed } from "./seed";
 import type { ScheduleItem } from "./types";
 
 /** Bump when seed shape / dev mock policy changes so本地空库可重新合并 seed */
@@ -17,6 +17,13 @@ export function mergeWithSeedIfEmpty(existing: ScheduleItem[], seed: ScheduleIte
   return seed;
 }
 
+/** 开发期注入用：去掉旧版 seed，再挂上当日 buildScheduleSeed()，避免「库里有脏数据 → 永远不合并新 seed」导致列表空 */
+function mergeDevSeedIntoParsed(parsed: ScheduleItem[]): ScheduleItem[] {
+  const seed = buildScheduleSeed();
+  const nonSeed = parsed.filter((i) => !String(i.id).startsWith("seed-"));
+  return [...nonSeed, ...seed];
+}
+
 export async function loadScheduleItems(): Promise<ScheduleItem[]> {
   const raw = await AsyncStorage.getItem(SCHEDULE_STORAGE_KEY);
   let parsed: ScheduleItem[] = [];
@@ -28,9 +35,13 @@ export async function loadScheduleItems(): Promise<ScheduleItem[]> {
       parsed = [];
     }
   }
-  const seed = shouldMergeScheduleDevSeed() ? SCHEDULE_SEED_EN : [];
-  const merged = mergeWithSeedIfEmpty(parsed, seed);
-  if (parsed.length === 0 && merged.length > 0) {
+
+  if (!shouldMergeScheduleDevSeed()) {
+    return parsed;
+  }
+
+  const merged = mergeDevSeedIntoParsed(parsed);
+  if (JSON.stringify(merged) !== JSON.stringify(parsed)) {
     await saveScheduleItems(merged);
   }
   return merged;

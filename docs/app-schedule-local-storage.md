@@ -76,7 +76,8 @@ AsyncStorage **没有**内置可视化界面，可用下面几种方式：
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const keys = (await AsyncStorage.getAllKeys()).filter((k) => k.includes("tempo.schedule"));
-console.log("tempo.schedule keys", keys, await AsyncStorage.multiGet(keys));
+const entries = await Promise.all(keys.map(async (k) => [k, await AsyncStorage.getItem(k)] as const));
+console.log("tempo.schedule", Object.fromEntries(entries));
 ```
 
 日志同样在 **Metro 终端**。

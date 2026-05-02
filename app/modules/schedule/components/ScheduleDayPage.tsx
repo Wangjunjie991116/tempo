@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 
 import { useTranslation } from "../../../core/i18n";
@@ -7,6 +7,7 @@ import { partitionScheduleForDay } from "../repo/schedulePartition";
 import type { ScheduleItem } from "../repo/types";
 import { ScheduleCard } from "./ScheduleCard";
 import { ScheduleSectionHeader } from "./ScheduleSectionHeader";
+import { ScheduleTimelineRail } from "./ScheduleTimelineRail";
 
 type Props = {
   day: Date;
@@ -29,13 +30,12 @@ export function ScheduleDayPage({
     [allItems, day],
   );
 
-  const tagLabel = useCallback(
-    (item: ScheduleItem) => {
-      if (item.tag === "design_review") return tr("schedule:tagDesignReview");
-      if (item.tag === "workshop") return tr("schedule:tagWorkshop");
-      return tr("schedule:tagBrainstorm");
-    },
-    [tr],
+  const monthShort = useMemo(
+    () =>
+      new Intl.DateTimeFormat(undefined, {
+        month: "short",
+      }).format(day),
+    [day],
   );
 
   const sectionUpcomingTitle = useMemo(
@@ -61,15 +61,21 @@ export function ScheduleDayPage({
           title={sectionUpcomingTitle}
           dotColor={t.brand}
         />
-        {upcoming.map((item) => (
-          <ScheduleCard
-            key={item.id}
-            item={item}
-            tagLabel={tagLabel(item)}
-            variant="upcoming"
-            onPress={onCardPress}
-          />
-        ))}
+        {upcoming.length > 0 ? (
+          <View style={[styles.timelineRow, { gap: t.space.md }]}>
+            <ScheduleTimelineRail variant="upcoming" monthShort={monthShort} />
+            <View style={[styles.cardStack, { gap: t.space.md }]}>
+              {upcoming.map((item) => (
+                <ScheduleCard
+                  key={item.id}
+                  item={item}
+                  variant="upcoming"
+                  onPress={onCardPress}
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
       </View>
 
       <View style={{ marginTop: t.space.xl, gap: t.space.md }}>
@@ -77,15 +83,21 @@ export function ScheduleDayPage({
           title={sectionFinishedTitle}
           dotColor={t.badge.workshop.fg}
         />
-        {finished.map((item) => (
-          <ScheduleCard
-            key={item.id}
-            item={item}
-            tagLabel={tagLabel(item)}
-            variant="finished"
-            onPress={onCardPress}
-          />
-        ))}
+        {finished.length > 0 ? (
+          <View style={[styles.timelineRow, { gap: t.space.md }]}>
+            <ScheduleTimelineRail variant="finished" monthShort={monthShort} />
+            <View style={[styles.cardStack, { gap: t.space.md }]}>
+              {finished.map((item) => (
+                <ScheduleCard
+                  key={item.id}
+                  item={item}
+                  variant="finished"
+                  onPress={onCardPress}
+                />
+              ))}
+            </View>
+          </View>
+        ) : null}
       </View>
     </ScrollView>
   );
@@ -94,5 +106,13 @@ export function ScheduleDayPage({
 const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: 0,
+  },
+  timelineRow: {
+    flexDirection: "row",
+    alignItems: "stretch",
+  },
+  cardStack: {
+    flex: 1,
+    minWidth: 0,
   },
 });

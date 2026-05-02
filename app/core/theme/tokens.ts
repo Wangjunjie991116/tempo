@@ -11,6 +11,12 @@ export const tempoPrimitives = {
     error50: "#fef3f2",
     cardUpcomingTint: "#dfe0fa",
     cardDoneTint: "#e8f5e9",
+    /** 日程卡片描边（浅中性灰，兜底）。 */
+    scheduleCardBorder: "#e6e6ea",
+    /** Figma：进行中卡片描边 border-secondary-brand */
+    scheduleCardBorderBrand: "#caccf7",
+    /** Figma：已完成卡片描边 border-positive */
+    scheduleCardBorderPositive: "#abefc6",
     white: "#ffffff",
     divider: "#e8e8e8",
   },

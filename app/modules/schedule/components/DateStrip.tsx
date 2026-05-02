@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Dimensions,
@@ -23,6 +24,13 @@ import {
 const CELL_WIDTH = 52;
 const CELL_GAP = 8;
 const CELL_STRIDE = CELL_WIDTH + CELL_GAP;
+const FADE_WIDTH = 44;
+
+/** `#RRGGBB` → 右侧全透明（用于边缘渐变遮罩）。 */
+function fadeEdgeColors(solidHex: string): [string, string] {
+  if (solidHex.startsWith("#") && solidHex.length === 7) return [solidHex, `${solidHex}00`];
+  return [solidHex, "transparent"];
+}
 
 type Props = {
   selected: Date;
@@ -34,6 +42,8 @@ export function DateStrip({ selected, onSelect }: Props) {
   const listRef = useRef<FlatList<Date>>(null);
   const [stripWidth, setStripWidth] = useState(() => Dimensions.get("window").width);
   const prevCenterKey = useRef<string | null>(null);
+
+  const fadePair = useMemo(() => fadeEdgeColors(t.screenBg), [t.screenBg]);
 
   const { min, max } = useMemo(() => stripCalendarBounds(), []);
   const days = useMemo(() => enumerateDaysInclusive(min, max), [min, max]);
@@ -106,7 +116,7 @@ export function DateStrip({ selected, onSelect }: Props) {
   const keyExtractor = useCallback((d: Date) => localDayKey(d), []);
 
   return (
-    <View onLayout={onStripLayout}>
+    <View onLayout={onStripLayout} style={styles.stripRoot}>
       <FlatList
         ref={listRef}
         horizontal
@@ -120,13 +130,44 @@ export function DateStrip({ selected, onSelect }: Props) {
         windowSize={7}
         contentContainerStyle={styles.stripContent}
       />
+      <LinearGradient
+        pointerEvents="none"
+        colors={fadePair}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.fadeLeft}
+      />
+      <LinearGradient
+        pointerEvents="none"
+        colors={[fadePair[1], fadePair[0]]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.fadeRight}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  stripRoot: {
+    position: "relative",
+  },
   stripContent: {
     paddingVertical: 4,
+  },
+  fadeLeft: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: FADE_WIDTH,
+  },
+  fadeRight: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: FADE_WIDTH,
   },
   cell: {
     width: CELL_WIDTH,

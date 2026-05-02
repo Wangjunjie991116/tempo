@@ -45,7 +45,9 @@ app/
 │   │   ├── RootNavigator.tsx # 根路由容器
 │   │   ├── AuthNavigator.tsx # 登录栈
 │   │   ├── AuthNavigationSync.tsx # 会话驱动跳转
-│   │   ├── MainTabNavigator.tsx # 底部三 Tab
+│   │   ├── MainTabNavigator.tsx # 底部 Tab + SVG 图标
+│   │   ├── icons/
+│   │   │   └── TabBarIcons.tsx   # Tab 日程/资产/我
 │   │   └── index.ts          # 导航模块导出
 │   ├── session/
 │   │   ├── SessionContext.tsx # 登录态 Context
@@ -77,12 +79,14 @@ app/
 │       ├── components/
 │       │   ├── DateStrip.tsx             # 横向日期条
 │       │   ├── ScheduleDayPage.tsx       # 单日竖向列表
+│       │   ├── ScheduleTimelineRail.tsx  # 左侧时间轴（卡片列外）
 │       │   ├── ScheduleCard.tsx          # 日程卡片单元
 │       │   ├── ScheduleSectionHeader.tsx # 分区标题行
-│       │   ├── ScheduleTagBadge.tsx      # 日程类型标签
 │       │   ├── NotificationEmptyState.tsx # 通知分段空状态
 │       │   └── icons/
 │       │       ├── BellIcon.tsx          # 铃铛图标
+│       │       ├── CalendarSmallIcon.tsx # 卡片时段日历标
+│       │       ├── ScheduleBubbleCheck.tsx # 时间轴完成勾选
 │       │       └── ChevronRightIcon.tsx  # 右箭头图标
 │       ├── hooks/
 │       │   ├── useScheduleAllItems.ts    # 加载全量日程

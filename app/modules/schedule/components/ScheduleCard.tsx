@@ -3,19 +3,19 @@ import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTempoTheme } from "../../../core/theme";
 import type { ScheduleItem } from "../repo/types";
 import { formatScheduleCardTimeRange } from "../utils/formatScheduleCardTimeRange";
-import { ChevronRightIcon } from "./icons/ChevronRightIcon";
-import { ScheduleTagBadge } from "./ScheduleTagBadge";
+import { CalendarSmallIcon } from "./icons/CalendarSmallIcon";
 
 type Props = {
   item: ScheduleItem;
-  tagLabel: string;
   variant: "upcoming" | "finished";
   onPress: () => void;
 };
 
-export function ScheduleCard({ item, tagLabel, variant, onPress }: Props) {
+/** 右侧日程卡片本体（描边与底色）；左侧时间轴见 {@link ScheduleTimelineRail}。 */
+export function ScheduleCard({ item, variant, onPress }: Props) {
   const t = useTempoTheme();
   const bg = variant === "finished" ? t.scheduleCardDone : t.scheduleCardUpcoming;
+  const borderColor = variant === "finished" ? t.scheduleCardBorderPositive : t.scheduleCardBorderBrand;
 
   return (
     <Pressable
@@ -29,54 +29,31 @@ export function ScheduleCard({ item, tagLabel, variant, onPress }: Props) {
         styles.card,
         {
           backgroundColor: bg,
+          borderColor,
           opacity: pressed ? 0.92 : 1,
           transform: [{ scale: pressed ? 0.99 : 1 }],
         },
       ]}
     >
-      <ScheduleTagBadge tag={item.tag} label={tagLabel} />
       <Text style={[styles.title, { color: t.textPrimary }]} numberOfLines={2}>
         {item.title}
       </Text>
-      <Text style={[styles.meta, { color: t.textMuted }]} numberOfLines={2}>
-        {formatScheduleCardTimeRange(item.startAt, item.endAt > 0 ? item.endAt : item.startAt)}
-      </Text>
-      <View style={styles.footer}>
-        <AttendeeStack count={item.attendeeCount} overflow={item.attendeeOverflow} color={t.textMuted} />
-        <ChevronRightIcon size={22} color={t.textMuted} />
+      <View style={styles.metaRow}>
+        <CalendarSmallIcon size={14} color={t.textMuted} />
+        <Text style={[styles.meta, { color: t.textMuted }]} numberOfLines={2}>
+          {formatScheduleCardTimeRange(item.startAt, item.endAt > 0 ? item.endAt : item.startAt)}
+        </Text>
       </View>
     </Pressable>
-  );
-}
-
-function AttendeeStack({
-  count,
-  overflow,
-  color,
-}: {
-  count: number;
-  overflow?: number;
-  color: string;
-}) {
-  const shown = Math.min(count, 3);
-  return (
-    <View style={styles.avatars}>
-      {Array.from({ length: shown }).map((_, i) => (
-        <View key={i} style={[styles.avatar, { marginLeft: i === 0 ? 0 : -10, borderColor: color }]}>
-          <View style={styles.avatarInner} />
-        </View>
-      ))}
-      {overflow != null && overflow > 0 ? (
-        <Text style={[styles.overflow, { color }]}>+{overflow}</Text>
-      ) : null}
-    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
-    padding: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
     gap: 8,
   },
   title: {
@@ -84,37 +61,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
   },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexWrap: "wrap",
+  },
   meta: {
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
     fontFamily: "Manrope_400Regular",
     fontSize: 12,
     lineHeight: 16,
-  },
-  footer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 4,
-  },
-  avatars: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  avatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 2,
-    borderColor: "#fff",
-    overflow: "hidden",
-    backgroundColor: "#ddd",
-  },
-  avatarInner: {
-    flex: 1,
-    backgroundColor: "#c4c4c4",
-  },
-  overflow: {
-    marginLeft: 8,
-    fontFamily: "Manrope_500Medium",
-    fontSize: 12,
   },
 });

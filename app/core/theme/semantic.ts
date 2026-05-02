@@ -22,6 +22,12 @@ export function buildSemanticLight() {
     divider: p.color.divider,
     scheduleCardUpcoming: p.color.cardUpcomingTint,
     scheduleCardDone: p.color.cardDoneTint,
+    scheduleCardBorder: p.color.scheduleCardBorder,
+    scheduleCardBorderBrand: p.color.scheduleCardBorderBrand,
+    scheduleCardBorderPositive: p.color.scheduleCardBorderPositive,
+    surfaceElevated: p.color.white,
+    scheduleRailUpcoming: p.color.brand500,
+    scheduleRailFinished: p.color.success500,
     badge: {
       designReview: { bg: p.color.cardUpcomingTint, fg: p.color.brand500 },
       workshop: { bg: p.color.success50, fg: p.color.success500 },

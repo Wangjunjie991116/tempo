@@ -48,6 +48,15 @@ pnpm dev:web
 pnpm dev:app
 ```
 
+### Deep linking（日程板块）
+
+`app/core/navigation/linking.ts` 注册前缀 `tempo://` 与 `https://tempo.app`，Main 栈路径段为 `app`，日程 Tab 路径段为 `schedule`。示例：
+
+- 日程首页：`tempo://app/schedule`、`https://tempo.app/app/schedule`
+- 通知收件箱：`tempo://app/schedule/notifications`、`https://tempo.app/app/schedule/notifications`
+
+本地 Mock 日程数据保存在 AsyncStorage，键名为 **`tempo.schedule.v1`**（卸载应用或清空存储可重新写入 seed）。
+
 ### 真机 WebView（避免 `Could not connect to the server` / -1004）
 
 1. 在仓库根目录执行 **`pnpm sync:lan-env`**（仅开 Web/App 时也请先执行一次）。脚本会**自动创建**缺失的 **`web/.env.dev`** / **`app/.env.dev`**，并写入当前机器的局域网 IP（**`VITE_API_BASE_URL`**、**`EXPO_PUBLIC_WEB_BASE_URL`**、**`EXPO_PUBLIC_API_BASE_URL`**）。  

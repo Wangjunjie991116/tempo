@@ -3,7 +3,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTempoTheme } from "../../../core/theme";
 import type { ScheduleItem } from "../repo/types";
 import { formatScheduleCardTimeRange } from "../utils/formatScheduleCardTimeRange";
-import { CalendarSmallIcon } from "./icons/CalendarSmallIcon";
+import { CalendarDotsIcon } from "./icons/CalendarDotsIcon";
 
 type Props = {
   item: ScheduleItem;
@@ -39,8 +39,8 @@ export function ScheduleCard({ item, variant, onPress }: Props) {
         {item.title}
       </Text>
       <View style={styles.metaRow}>
-        <CalendarSmallIcon size={14} color={t.textMuted} />
-        <Text style={[styles.meta, { color: t.textMuted }]} numberOfLines={2}>
+        <CalendarDotsIcon size={16} color={t.textMeta} />
+        <Text style={[styles.meta, { color: t.textMeta }]} numberOfLines={2}>
           {formatScheduleCardTimeRange(item.startAt, item.endAt > 0 ? item.endAt : item.startAt)}
         </Text>
       </View>

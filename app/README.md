@@ -85,8 +85,8 @@ app/
 │       │   ├── NotificationEmptyState.tsx # 通知分段空状态
 │       │   └── icons/
 │       │       ├── BellIcon.tsx          # 铃铛图标
-│       │       ├── CalendarSmallIcon.tsx # 卡片时段日历标
-│       │       ├── ScheduleBubbleCheck.tsx # 时间轴完成勾选
+│       │       ├── CalendarDotsIcon.tsx    # 卡片 CalendarDots 矢量
+│       │       ├── TimelineFinishedGlyph.tsx # 时间轴完成 CheckCircle
 │       │       └── ChevronRightIcon.tsx  # 右箭头图标
 │       ├── hooks/
 │       │   ├── useScheduleAllItems.ts    # 加载全量日程

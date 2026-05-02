@@ -138,10 +138,15 @@ export default function ScheduleHomeScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: t.screenBg }]} edges={["top", "left", "right"]}>
+    <SafeAreaView
+      style={[styles.safe, { backgroundColor: t.screenBg }]}
+      edges={["top", "left", "right"]}
+    >
       <View style={[styles.headerBlock, { paddingHorizontal: t.space.lg }]}>
         <View style={styles.headerRow}>
-          <View style={[styles.avatar, { backgroundColor: t.scheduleCardUpcoming }]}>
+          <View
+            style={[styles.avatar, { backgroundColor: t.scheduleCardUpcoming }]}
+          >
             <Text style={[styles.avatarLetter, { color: t.brand }]}>G</Text>
           </View>
           <View style={styles.headerText}>
@@ -155,13 +160,18 @@ export default function ScheduleHomeScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={tr("notifications:inboxTitle")}
-            onPress={() => navigation.navigate(SCHEDULE_STACK.NotificationInbox)}
+            onPress={() =>
+              navigation.navigate(SCHEDULE_STACK.NotificationInbox)
+            }
             android_ripple={
               Platform.OS === "android"
                 ? { color: "rgba(96, 101, 230, 0.14)", borderless: true }
                 : undefined
             }
-            style={({ pressed }) => [styles.bellBtn, { opacity: pressed ? 0.75 : 1 }]}
+            style={({ pressed }) => [
+              styles.bellBtn,
+              { opacity: pressed ? 0.75 : 1 },
+            ]}
           >
             <BellIcon size={26} color={t.textPrimary} />
           </Pressable>
@@ -196,7 +206,11 @@ export default function ScheduleHomeScreen() {
         removeClippedSubviews={false}
       />
 
-      <Snackbar visible={snackVisible} onDismiss={() => setSnackVisible(false)} duration={2200}>
+      <Snackbar
+        visible={snackVisible}
+        onDismiss={() => setSnackVisible(false)}
+        duration={2200}
+      >
         {tr("schedule:detailSoon")}
       </Snackbar>
     </SafeAreaView>

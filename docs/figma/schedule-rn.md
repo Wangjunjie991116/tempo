@@ -30,8 +30,11 @@
 | 5 | 日程右上角 — **通知**板块 | `8111:3912` | [在 Figma 中打开](https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8111-3912&t=nc0Mi4p8KtcfY42i-4) |
 | 6 | **消息为空**时的展示 | `8111:3945` | [在 Figma 中打开](https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8111-3945&t=nc0Mi4p8KtcfY42i-4) |
 | 7 | **日程列表**（左侧时间轴 + 卡片列） | `8142:3182` | [在 Figma 中打开](https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8142-3182&t=nc0Mi4p8KtcfY42i-4) |
+| 8 | **整页 Light Mode**（画布入口，含导航/日期条/列表） | `6257:11094` | [在 Figma 中打开](https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=6257-11094) |
 
-**MCP：** Cursor **`user-figma`** → `get_design_context`（`fileKey`=`EvZSYclUAsOszMPa0boDDj`，`nodeId`=`8142:3182`）可返回参考代码与 **7 日内有效**的矢量资源 CDN URL（如进行中 `SpinnerGap`、完成 `CheckCircle`）；RN 落地为 `ScheduleTimelineRail`（轴在卡片外）+ `ScheduleCard`，进行中圆内暂用白色 `ActivityIndicator` 代替过期敏感位图。
+**MCP：** Cursor **`user-figma`** → `get_metadata` / `get_design_context`（`fileKey`=`EvZSYclUAsOszMPa0boDDj`）。`get_design_context` 可返回参考代码与 **7 日内有效**的资源 URL；**Figma Starter** 可能对 MCP 调用次数有限制，超限需升级计划或在桌面端选中图层后再试。列表节点 `8142:3182` 内可见 `CalendarDots`、`CheckCircle`、`SpinnerGap` 等子节点，可与 RN 矢量组件对齐。
+
+**复制用（纯文本）：**
 
 ```text
 https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8142-3275&t=nc0Mi4p8KtcfY42i-0
@@ -41,6 +44,8 @@ https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8
 https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8111-3850&t=nc0Mi4p8KtcfY42i-4
 https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8111-3912&t=nc0Mi4p8KtcfY42i-4
 https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8111-3945&t=nc0Mi4p8KtcfY42i-4
+https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8142-3182&t=nc0Mi4p8KtcfY42i-4
+https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=6257-11094
 ```
 
 ---
@@ -56,6 +61,7 @@ https://www.figma.com/design/EvZSYclUAsOszMPa0boDDj/%E6%97%A5%E7%A8%8B?node-id=8
 | `8111:3912` | `8111-3912` | 右上角 **通知**面板 | Segment 另一侧 |
 | `8111:3945` | `8111-3945` | **空状态** | `NotificationEmptyState` |
 | `8142:3182` | `8142-3182` | **列表**：左侧时间轴（卡片外）+ 卡片列 | `ScheduleDayPage`：`ScheduleTimelineRail` + `ScheduleCard` |
+| `6257:11094` | `6257-11094` | **Light Mode** 整页画布 | 总览；子节点含日期条、图标实例（如 `CalendarDots`、`CheckCircle`） |
 | `1:181` | `1-181` | 设计令牌 / 变量 | `app/core/theme/tokens.ts`、`semantic.ts` |
 
 ---

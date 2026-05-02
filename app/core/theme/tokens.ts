@@ -4,6 +4,8 @@ export const tempoPrimitives = {
     backgroundTertiary: "#f5f5f5",
     primaryText: "#151515",
     placeholderText: "#a5a5a5",
+    /** Figma tertiary-text-color */
+    tertiaryText: "#575757",
     brand500: "#6065e6",
     success500: "#17b26a",
     success50: "#ecfdf3",

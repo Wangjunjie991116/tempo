@@ -18,6 +18,7 @@ export function buildSemanticLight() {
     screenBg: p.color.backgroundTertiary,
     textPrimary: p.color.primaryText,
     textMuted: p.color.placeholderText,
+    textMeta: p.color.tertiaryText,
     brand: p.color.brand500,
     divider: p.color.divider,
     scheduleCardUpcoming: p.color.cardUpcomingTint,
@@ -26,6 +27,8 @@ export function buildSemanticLight() {
     scheduleCardBorderBrand: p.color.scheduleCardBorderBrand,
     scheduleCardBorderPositive: p.color.scheduleCardBorderPositive,
     surfaceElevated: p.color.white,
+    /** Brand-selected-highlighted（#DFE0FA），日历「今日」未选中弱提示底 */
+    brandSelectedHighlight: p.color.cardUpcomingTint,
     scheduleRailUpcoming: p.color.brand500,
     scheduleRailFinished: p.color.success500,
     badge: {

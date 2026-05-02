@@ -1,7 +1,7 @@
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 import { useTempoTheme } from "../../../core/theme";
-import { ScheduleBubbleCheck } from "./icons/ScheduleBubbleCheck";
+import { TimelineFinishedGlyph } from "./icons/TimelineFinishedGlyph";
 
 type Props = {
   variant: "upcoming" | "finished";
@@ -33,7 +33,7 @@ export function ScheduleTimelineRail({ variant, monthShort }: Props) {
         {up ? (
           <ActivityIndicator color={t.surfaceElevated} size="small" />
         ) : (
-          <ScheduleBubbleCheck size={20} color={t.surfaceElevated} />
+          <TimelineFinishedGlyph size={20} />
         )}
       </View>
       <View style={[styles.verticalLine, { backgroundColor: up ? t.brand : t.scheduleRailFinished }]} />

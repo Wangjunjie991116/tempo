@@ -21,9 +21,11 @@ import {
   stripCalendarBounds,
 } from "../utils/calendarRange";
 
-const CELL_WIDTH = 52;
-const CELL_GAP = 8;
-const CELL_STRIDE = CELL_WIDTH + CELL_GAP;
+/** 一行可见天数 */
+const VISIBLE_DAYS = 7;
+/** 「今天 / 当前选中」对齐到从左数第几列（1-based 为 4 → 0-based 下标 3） */
+const ANCHOR_SLOT_INDEX = 3;
+const CELL_GAP = 6;
 const FADE_WIDTH = 44;
 
 /** `#RRGGBB` → 右侧全透明（用于边缘渐变遮罩）。 */
@@ -41,7 +43,7 @@ export function DateStrip({ selected, onSelect }: Props) {
   const t = useTempoTheme();
   const listRef = useRef<FlatList<Date>>(null);
   const [stripWidth, setStripWidth] = useState(() => Dimensions.get("window").width);
-  const prevCenterKey = useRef<string | null>(null);
+  const prevScrollKey = useRef<string | null>(null);
 
   const fadePair = useMemo(() => fadeEdgeColors(t.screenBg), [t.screenBg]);
 
@@ -53,27 +55,46 @@ export function DateStrip({ selected, onSelect }: Props) {
     [],
   );
 
-  const scrollDayToViewportCenter = useCallback(
+  /** 基于条带宽度均分 7 列（含列间距）。 */
+  const { cellWidth, cellStride } = useMemo(() => {
+    if (stripWidth <= 0) {
+      const cw = 44;
+      return { cellWidth: cw, cellStride: cw + CELL_GAP };
+    }
+    const cw = Math.max(
+      30,
+      Math.floor((stripWidth - (VISIBLE_DAYS - 1) * CELL_GAP) / VISIBLE_DAYS),
+    );
+    return { cellWidth: cw, cellStride: cw + CELL_GAP };
+  }, [stripWidth]);
+
+  const maxScrollOffset = useMemo(() => {
+    const contentW = days.length * cellStride;
+    return Math.max(0, contentW - stripWidth);
+  }, [days.length, cellStride, stripWidth]);
+
+  const scrollDayToAnchorSlot = useCallback(
     (day: Date, animated: boolean) => {
-      if (stripWidth <= 0 || days.length === 0) return;
+      if (stripWidth <= 0 || days.length === 0 || cellStride <= 0) return;
       const idx = indexOfSameDay(days, day);
       if (idx < 0) return;
-      const offset = Math.max(0, idx * CELL_STRIDE - stripWidth / 2 + CELL_WIDTH / 2);
+      const raw = (idx - ANCHOR_SLOT_INDEX) * cellStride;
+      const offset = Math.max(0, Math.min(raw, maxScrollOffset));
       listRef.current?.scrollToOffset({ offset, animated });
     },
-    [days, stripWidth],
+    [days, stripWidth, cellStride, maxScrollOffset],
   );
 
-  /** 条带宽变化或换曰：把选中曰滚到横向视口中间；首帧无动画 */
+  /** 条带宽变化或选中曰变化：把「选中曰」锚定到第 4 列（首帧无动画）。 */
   useEffect(() => {
     if (stripWidth <= 0 || days.length === 0) return;
-    const key = localDayKey(selected);
-    const animated = prevCenterKey.current !== null && prevCenterKey.current !== key;
+    const key = `${localDayKey(selected)}-${stripWidth}-${cellStride}`;
+    const animated = prevScrollKey.current !== null && prevScrollKey.current !== key;
     requestAnimationFrame(() => {
-      scrollDayToViewportCenter(selected, animated);
-      prevCenterKey.current = key;
+      scrollDayToAnchorSlot(selected, animated);
+      prevScrollKey.current = key;
     });
-  }, [selected, stripWidth, days.length, scrollDayToViewportCenter]);
+  }, [selected, stripWidth, days.length, cellStride, scrollDayToAnchorSlot]);
 
   const onStripLayout = useCallback((e: LayoutChangeEvent) => {
     const w = e.nativeEvent.layout.width;
@@ -82,35 +103,57 @@ export function DateStrip({ selected, onSelect }: Props) {
 
   const renderItem: ListRenderItem<Date> = useCallback(
     ({ item: d }) => {
-      const active = sameLocalDay(d, selected);
+      const isSelected = sameLocalDay(d, selected);
+      const isToday = sameLocalDay(d, new Date());
+      const labelColor = isSelected ? t.textPrimary : t.textMuted;
+
+      /** 今日未选中：文案同非选中，背景为 Brand-selected-highlighted（与卡片 tint 同源 #DFE0FA）。 */
+      let backgroundColor: string = "transparent";
+      if (isSelected) backgroundColor = t.scheduleCardUpcoming;
+      else if (isToday) backgroundColor = t.brandSelectedHighlight;
+
       return (
         <Pressable
           onPress={() => onSelect(startOfLocalDay(d))}
           style={({ pressed }) => [
             styles.cell,
             {
+              width: cellWidth,
               marginRight: CELL_GAP,
-              borderColor: active ? t.brand : "transparent",
-              backgroundColor: active ? t.scheduleCardUpcoming : "transparent",
+              paddingHorizontal: Math.min(8, Math.max(2, Math.floor(cellWidth / 7))),
+              borderColor: isSelected ? t.brand : "transparent",
+              backgroundColor,
               opacity: pressed ? 0.88 : 1,
             },
           ]}
         >
-          <Text style={[styles.wd, { color: t.textMuted }]}>{fmtWeekday.format(d)}</Text>
-          <Text style={[styles.num, { color: t.textPrimary }]}>{d.getDate()}</Text>
+          <Text style={[styles.wd, { color: labelColor }]} numberOfLines={1}>
+            {fmtWeekday.format(d)}
+          </Text>
+          <Text style={[styles.num, { color: labelColor }]}>{d.getDate()}</Text>
         </Pressable>
       );
     },
-    [fmtWeekday, onSelect, selected, t.brand, t.scheduleCardUpcoming, t.textMuted, t.textPrimary],
+    [
+      cellWidth,
+      fmtWeekday,
+      onSelect,
+      selected,
+      t.brand,
+      t.brandSelectedHighlight,
+      t.scheduleCardUpcoming,
+      t.textMuted,
+      t.textPrimary,
+    ],
   );
 
   const getItemLayout = useCallback(
     (_: unknown, index: number) => ({
-      length: CELL_STRIDE,
-      offset: CELL_STRIDE * index,
+      length: cellStride,
+      offset: cellStride * index,
       index,
     }),
-    [],
+    [cellStride],
   );
 
   const keyExtractor = useCallback((d: Date) => localDayKey(d), []);
@@ -125,9 +168,10 @@ export function DateStrip({ selected, onSelect }: Props) {
         renderItem={renderItem}
         getItemLayout={getItemLayout}
         showsHorizontalScrollIndicator={false}
-        initialNumToRender={31}
+        initialNumToRender={VISIBLE_DAYS + 14}
         maxToRenderPerBatch={40}
         windowSize={7}
+        extraData={{ cellWidth, cellStride, selectedKey: localDayKey(selected) }}
         contentContainerStyle={styles.stripContent}
       />
       <LinearGradient
@@ -170,22 +214,22 @@ const styles = StyleSheet.create({
     width: FADE_WIDTH,
   },
   cell: {
-    width: CELL_WIDTH,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingVertical: 8,
     borderRadius: 16,
     borderWidth: 2,
     alignItems: "center",
+    justifyContent: "center",
   },
   wd: {
     fontFamily: "Manrope_600SemiBold",
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11,
+    lineHeight: 14,
+    maxWidth: "100%",
   },
   num: {
     fontFamily: "Manrope_600SemiBold",
-    fontSize: 16,
-    lineHeight: 24,
-    marginTop: 4,
+    fontSize: 15,
+    lineHeight: 22,
+    marginTop: 2,
   },
 });

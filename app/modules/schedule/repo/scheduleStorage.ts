@@ -18,7 +18,7 @@ export const LEGACY_SCHEDULE_STORAGE_KEYS = [
 const DEV_BOOTSTRAP_MARKER_KEY = "tempo.schedule.devBootstrapVersion";
 
 /** 需要强制清空本地日程时：增大该字符串（任意），下次 __DEV__ 冷启动会删桶并重灌 Mock */
-export const DEV_SCHEDULE_BOOTSTRAP_VERSION = "2026-05-02-seed-reset-v2";
+export const DEV_SCHEDULE_BOOTSTRAP_VERSION = "2026-05-02-expo-go-bootstrap";
 
 /** Release 不注入 Mock；开发期见 `docs/superpowers/specs/2026-05-02-schedule-platform-design.md` §7 */
 export function shouldMergeScheduleDevSeed(): boolean {

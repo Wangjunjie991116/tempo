@@ -34,6 +34,17 @@ ScheduleHomeScreen
 4. **模拟器/真机系统日期**不是你以为的那一天（例如改了系统时间）。  
 5. **缓存的旧 JS Bundle**：改存储逻辑后需重装 App 或 **`expo start --clear`**，确保跑到最新代码。
 
-## 4. 强制再清空一次（开发）
+## 4. Expo Go（系统日期已正确，例如 2026-05-02）
 
-把 `app/modules/schedule/repo/scheduleStorage.ts` 里的常量 **`DEV_SCHEDULE_BOOTSTRAP_VERSION`** 改一个新字符串（例如加个后缀），保存后冷启动 App；**仅 __DEV__** 下会再次执行 `multiRemove` 清空上述日程键并重新写入 Mock。
+- 连 **Metro 开发服务器** 时一般为 **`__DEV__ === true`**，会走开发 bootstrap + Mock；与是否「真机日期正确」独立，日期只影响 **seed 锚定哪一天**。  
+- **仍看不到数据时**：  
+  1. 终端执行 **`pnpm --filter app start:clear`**（或 `expo start --clear`），Expo Go 里 **Reload**。  
+  2. **完全杀掉 Expo Go** 再重新扫码打开本项目（避免旧 JS 实例）。  
+  3. 仍不行：在手机系统设置里 **清除 Expo Go 应用数据**（会清空 Expo Go 内所有项目的 AsyncStorage，慎用）。  
+  4. 代码侧已 bump **`DEV_SCHEDULE_BOOTSTRAP_VERSION`** 时，下一次冷启动会在 __DEV__ 下再次删掉 `v1/v2/v3` 并重灌 Mock。
+
+---
+
+## 5. 强制再清空一次（开发）
+
+把 `app/modules/schedule/repo/scheduleStorage.ts` 里的常量 **`DEV_SCHEDULE_BOOTSTRAP_VERSION`** 改一个新字符串（例如加个后缀），保存后冷启动 App；**仅 __DEV__** 下会再次并行清空上述日程键并重新写入 Mock。

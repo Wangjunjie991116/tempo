@@ -7,6 +7,7 @@ import FinanceHomeScreen from "../../modules/finance/FinanceHomeScreen";
 import { ScheduleStackNavigator } from "../../modules/schedule/navigation/ScheduleStackNavigator";
 import UserHomeScreen from "../../modules/user/UserHomeScreen";
 import WebTestScreen from "../../modules/user/WebTestScreen";
+import { useTranslation } from "../i18n";
 import { useTempoTheme } from "../theme";
 import { TabFinanceIcon, TabScheduleIcon, TabUserIcon } from "./icons/TabBarIcons";
 import { MAIN_TAB, USER_STACK } from "./routes";
@@ -15,17 +16,18 @@ import type { MainTabParamList, UserStackParamList } from "./types";
 const UserNativeStack = createNativeStackNavigator<UserStackParamList>();
 
 function UserStackNavigator() {
+  const { t } = useTranslation(["common"]);
   return (
     <UserNativeStack.Navigator>
       <UserNativeStack.Screen
         name={USER_STACK.UserHome}
         component={UserHomeScreen}
-        options={{ title: "我", headerShown: true }}
+        options={{ title: t("common:userHomeTitle"), headerShown: true }}
       />
       <UserNativeStack.Screen
         name={USER_STACK.UserWebTest}
         component={WebTestScreen}
-        options={{ title: "WebView 测试", headerShown: true }}
+        options={{ title: t("common:webTestTitle"), headerShown: true }}
       />
     </UserNativeStack.Navigator>
   );
@@ -35,6 +37,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export function MainTabNavigator() {
   const t = useTempoTheme();
+  const { t: tr } = useTranslation(["schedule", "common"]);
   const insets = useSafeAreaInsets();
 
   return (
@@ -77,17 +80,23 @@ export function MainTabNavigator() {
       <Tab.Screen
         name={MAIN_TAB.Schedule}
         component={ScheduleStackNavigator}
-        options={{ tabBarLabel: "日程", headerTitle: "日程" }}
+        options={{
+          tabBarLabel: tr("schedule:tabTitle"),
+          headerTitle: tr("schedule:tabTitle"),
+        }}
       />
       <Tab.Screen
         name={MAIN_TAB.Finance}
         component={FinanceHomeScreen}
-        options={{ tabBarLabel: "资产", headerTitle: "资产" }}
+        options={{
+          tabBarLabel: tr("common:tabFinance"),
+          headerTitle: tr("common:tabFinance"),
+        }}
       />
       <Tab.Screen
         name={MAIN_TAB.User}
         component={UserStackNavigator}
-        options={{ tabBarLabel: "我", headerShown: false }}
+        options={{ tabBarLabel: tr("common:tabUser"), headerShown: false }}
       />
     </Tab.Navigator>
   );

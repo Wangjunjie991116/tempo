@@ -1,0 +1,20 @@
+{
+  "appName": "Tempo",
+  "tabFinance": "资产",
+  "tabUser": "我",
+  "userHomeTitle": "我",
+  "webTestTitle": "WebView 测试",
+  "splashTitle": "轻程",
+  "splashSubtitle": "Tempo",
+  "splashAccessibilityLabel": "轻程",
+  "financeTitle": "资产",
+  "financeSubtitle": "RN 占位 · 待接 Figma",
+  "loginTitle": "登录（RN 占位）",
+  "loginEnterApp": "进入应用（演示）",
+  "webTestBanner": "H5 联调 · WebView",
+  "webTestUrlLabel": "当前加载地址：",
+  "webTestDevHint": "真机在仓库根目录执行 pnpm sync:lan-env（会创建/更新 app/.env.dev），或手动配置 EXPO_PUBLIC_* 为 Mac 局域网 IP，然后 expo start --clear。",
+  "userWebTestRow": "WebView 测试",
+  "userWebTestHint": "加载当前 H5（联调用）",
+  "userSignOutDemo": "退出登录（演示）"
+}

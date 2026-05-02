@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useTranslation } from "../../core/i18n";
 import { useSession } from "../../core/session";
 import { AUTH_STACK, MAIN_TAB, ROOT_STACK, SCHEDULE_STACK } from "../../core/navigation/routes";
 import type { RootStackParamList } from "../../core/navigation/types";
@@ -20,6 +21,7 @@ type Props = NativeStackScreenProps<RootStackParamList, typeof ROOT_STACK.Splash
 
 export default function SplashScreen({ navigation }: Props) {
   const { isAuthenticated } = useSession();
+  const { t } = useTranslation(["common"]);
   const splashOpacity = useRef(new Animated.Value(1)).current;
   const authRef = useRef(isAuthenticated);
   authRef.current = isAuthenticated;
@@ -97,13 +99,13 @@ export default function SplashScreen({ navigation }: Props) {
       <View style={styles.splashCenter} pointerEvents="none">
         <View style={styles.iconShadowWrap}>
           <Image
-            accessibilityLabel="轻程"
+            accessibilityLabel={t("common:splashAccessibilityLabel")}
             source={require("../../assets/tempo-icon.png")}
             style={styles.splashIcon}
           />
         </View>
-        <Text style={styles.splashTitle}>轻程</Text>
-        <Text style={styles.splashSubtitle}>Tempo</Text>
+        <Text style={styles.splashTitle}>{t("common:splashTitle")}</Text>
+        <Text style={styles.splashSubtitle}>{t("common:splashSubtitle")}</Text>
       </View>
     </Animated.View>
   );

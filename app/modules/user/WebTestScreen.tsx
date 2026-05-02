@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "../../core/i18n";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import {
@@ -8,17 +9,18 @@ import {
 } from "../../core/config/tempoWebConfig";
 
 export default function WebTestScreen() {
+  const { t } = useTranslation(["common"]);
   return (
     <SafeAreaView style={styles.safe} edges={["left", "right", "bottom"]}>
       <View style={styles.banner}>
-        <Text style={styles.bannerText}>H5 联调 · WebView</Text>
+        <Text style={styles.bannerText}>{t("common:webTestBanner")}</Text>
       </View>
       {TEMPO_SHOW_LOCALHOST_WEB_HINT ? (
         <Text style={styles.hint}>
-          当前加载地址：{TEMPO_WEB_URL}
+          {t("common:webTestUrlLabel")}
+          {TEMPO_WEB_URL}
           {"\n"}
-          真机在仓库根目录执行 pnpm sync:lan-env（会创建/更新 app/.env.dev），或手动配置
-          EXPO_PUBLIC_* 为 Mac 局域网 IP，然后 expo start --clear。
+          {t("common:webTestDevHint")}
         </Text>
       ) : null}
       <WebView

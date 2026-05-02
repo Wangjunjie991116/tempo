@@ -1,3 +1,20 @@
 {
-  "appName": "Tempo"
+  "appName": "Tempo",
+  "tabFinance": "Finance",
+  "tabUser": "Me",
+  "userHomeTitle": "Me",
+  "webTestTitle": "WebView test",
+  "splashTitle": "Tempo",
+  "splashSubtitle": "Tempo",
+  "splashAccessibilityLabel": "Tempo",
+  "financeTitle": "Finance",
+  "financeSubtitle": "RN placeholder · Figma pending",
+  "loginTitle": "Sign in (RN placeholder)",
+  "loginEnterApp": "Enter app (demo)",
+  "webTestBanner": "H5 · WebView",
+  "webTestUrlLabel": "Loading URL:",
+  "webTestDevHint": "On a physical device: from the repo root run pnpm sync:lan-env (creates or updates app/.env.dev), or set EXPO_PUBLIC_* to your Mac's LAN IP, then expo start --clear.",
+  "userWebTestRow": "WebView test",
+  "userWebTestHint": "Load current H5 (dev)",
+  "userSignOutDemo": "Sign out (demo)"
 }

@@ -1,12 +1,14 @@
 import { StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "../../core/i18n";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function FinanceHomeScreen() {
+  const { t } = useTranslation(["common"]);
   return (
     <SafeAreaView style={styles.root} edges={["top", "left", "right"]}>
       <View style={styles.center}>
-        <Text style={styles.title}>资产</Text>
-        <Text style={styles.sub}>RN 占位 · 待接 Figma</Text>
+        <Text style={styles.title}>{t("common:financeTitle")}</Text>
+        <Text style={styles.sub}>{t("common:financeSubtitle")}</Text>
       </View>
     </SafeAreaView>
   );

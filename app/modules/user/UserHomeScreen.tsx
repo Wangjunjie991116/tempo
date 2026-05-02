@@ -1,5 +1,6 @@
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "../../core/i18n";
 import { useSession } from "../../core/session";
 import { USER_STACK } from "../../core/navigation/routes";
 import type { UserStackParamList } from "../../core/navigation/types";
@@ -8,19 +9,20 @@ type Props = NativeStackScreenProps<UserStackParamList, typeof USER_STACK.UserHo
 
 export default function UserHomeScreen({ navigation }: Props) {
   const { signOut } = useSession();
+  const { t } = useTranslation(["common"]);
 
   return (
     <View style={styles.root}>
-      <Text style={styles.headline}>我</Text>
+      <Text style={styles.headline}>{t("common:userHomeTitle")}</Text>
       <Pressable
         style={styles.row}
         onPress={() => navigation.navigate(USER_STACK.UserWebTest)}
       >
-        <Text style={styles.rowLabel}>WebView 测试</Text>
-        <Text style={styles.rowHint}>加载当前 H5（联调用）</Text>
+        <Text style={styles.rowLabel}>{t("common:userWebTestRow")}</Text>
+        <Text style={styles.rowHint}>{t("common:userWebTestHint")}</Text>
       </Pressable>
       <Pressable style={styles.signOut} onPress={signOut}>
-        <Text style={styles.signOutText}>退出登录（演示）</Text>
+        <Text style={styles.signOutText}>{t("common:userSignOutDemo")}</Text>
       </Pressable>
     </View>
   );

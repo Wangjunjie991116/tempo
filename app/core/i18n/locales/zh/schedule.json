@@ -1,0 +1,14 @@
+{
+  "tabTitle": "日程",
+  "greetingHi": "你好，{{name}}",
+  "goodMorning": "早上好。",
+  "goodAfternoon": "下午好。",
+  "goodEvening": "晚上好。",
+  "sectionUpcoming": "即将进行（{{count}}）",
+  "sectionFinished": "已完成（{{count}}）",
+  "detailSoon": "敬请期待。",
+  "monthShortDec": "12月",
+  "tagDesignReview": "设计评审",
+  "tagWorkshop": "工作坊",
+  "tagBrainstorm": "头脑风暴"
+}

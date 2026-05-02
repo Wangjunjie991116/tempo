@@ -3,7 +3,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SCHEDULE_SEED_EN } from "./seed";
 import type { ScheduleItem } from "./types";
 
-export const SCHEDULE_STORAGE_KEY = "tempo.schedule.v1";
+/** Bump when seed shape / dev mock policy changes so本地空库可重新合并 seed */
+export const SCHEDULE_STORAGE_KEY = "tempo.schedule.v2";
 
 /** Release 不注入 Mock；开发期见 `docs/superpowers/specs/2026-05-02-schedule-platform-design.md` §7 */
 export function shouldMergeScheduleDevSeed(): boolean {

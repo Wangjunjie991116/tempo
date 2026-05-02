@@ -55,7 +55,7 @@ pnpm dev:app
 - 日程首页：`tempo://app/schedule`、`https://tempo.app/app/schedule`
 - 通知收件箱：`tempo://app/schedule/notifications`、`https://tempo.app/app/schedule/notifications`
 
-本地 Mock 日程数据保存在 AsyncStorage，键名为 **`tempo.schedule.v1`**（卸载应用或清空存储可重新写入 seed）。
+本地 Mock 日程数据保存在 AsyncStorage，键名为 **`tempo.schedule.v2`**（卸载应用或清空存储可重新写入开发期 seed）。
 
 ### 真机 WebView（避免 `Could not connect to the server` / -1004）
 

@@ -72,7 +72,7 @@
 
 ### 5.2 建议存储形态
 
-- Key：`tempo.schedule.v1`（命名空间版本化）。  
+- Key：`tempo.schedule.v2`（命名空间版本化）。  
 - 内容：`ScheduleItem[]`（含 `id`、`title`、`start`、`end`、`tag`、`status`、`attendees` 等与设计一致的字段）。
 
 ### 5.3 Mock

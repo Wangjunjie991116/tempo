@@ -2,6 +2,8 @@
   "tabTitle": "Schedule",
   "greetingHi": "Hi, {{name}}",
   "goodMorning": "Good morning.",
+  "goodAfternoon": "Good afternoon.",
+  "goodEvening": "Good evening.",
   "sectionUpcoming": "Upcoming ({{count}})",
   "sectionFinished": "Finished ({{count}})",
   "detailSoon": "Coming soon.",

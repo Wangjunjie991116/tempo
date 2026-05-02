@@ -32,6 +32,10 @@ import {
   startOfLocalDay,
   stripCalendarBounds,
 } from "../utils/calendarRange";
+import {
+  getScheduleDayPhase,
+  scheduleGreetingI18nKey,
+} from "../utils/dayPhaseGreeting";
 
 type ScheduleNav = NativeStackNavigationProp<ScheduleStackParamList>;
 
@@ -154,7 +158,7 @@ export default function ScheduleHomeScreen() {
               {tr("schedule:greetingHi", { name: "Gavin 👋" })}
             </Text>
             <Text style={[styles.goodMorning, { color: t.textPrimary }]}>
-              {tr("schedule:goodMorning")}
+              {tr(scheduleGreetingI18nKey(getScheduleDayPhase()))}
             </Text>
           </View>
           <Pressable

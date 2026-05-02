@@ -6,6 +6,8 @@ export const tempoPrimitives = {
     placeholderText: "#a5a5a5",
     /** Figma tertiary-text-color */
     tertiaryText: "#575757",
+    /** 卡片时段中 24h 时间：介于 tertiary 与 primary 之间，浅于标题 */
+    scheduleCardTime: "#454545",
     brand500: "#6065e6",
     success500: "#17b26a",
     success50: "#ecfdf3",

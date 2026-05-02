@@ -19,6 +19,8 @@ export function buildSemanticLight() {
     textPrimary: p.color.primaryText,
     textMuted: p.color.placeholderText,
     textMeta: p.color.tertiaryText,
+    /** 日程卡片副标题中的时段（HH:mm），略深于日期色 */
+    scheduleCardTime: p.color.scheduleCardTime,
     brand: p.color.brand500,
     divider: p.color.divider,
     scheduleCardUpcoming: p.color.cardUpcomingTint,

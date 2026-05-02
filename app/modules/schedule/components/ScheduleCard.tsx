@@ -2,7 +2,7 @@ import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useTempoTheme } from "../../../core/theme";
 import type { ScheduleItem } from "../repo/types";
-import { formatScheduleCardTimeRange } from "../utils/formatScheduleCardTimeRange";
+import { getScheduleCardTimeSegments } from "../utils/scheduleCardTimeSegments";
 import { CalendarDotsIcon } from "./icons/CalendarDotsIcon";
 
 type Props = {
@@ -16,6 +16,11 @@ export function ScheduleCard({ item, variant, onPress }: Props) {
   const t = useTempoTheme();
   const bg = variant === "finished" ? t.scheduleCardDone : t.scheduleCardUpcoming;
   const borderColor = variant === "finished" ? t.scheduleCardBorderPositive : t.scheduleCardBorderBrand;
+
+  const segments = getScheduleCardTimeSegments(
+    item.startAt,
+    item.endAt > 0 ? item.endAt : item.startAt,
+  );
 
   return (
     <Pressable
@@ -40,8 +45,15 @@ export function ScheduleCard({ item, variant, onPress }: Props) {
       </Text>
       <View style={styles.metaRow}>
         <CalendarDotsIcon size={16} color={t.textMeta} />
-        <Text style={[styles.meta, { color: t.textMeta }]} numberOfLines={2}>
-          {formatScheduleCardTimeRange(item.startAt, item.endAt > 0 ? item.endAt : item.startAt)}
+        <Text style={styles.meta} numberOfLines={2}>
+          {segments.map((seg, i) => (
+            <Text
+              key={`${seg.role}-${i}-${seg.text}`}
+              style={{ color: seg.role === "time" ? t.scheduleCardTime : t.textMeta }}
+            >
+              {seg.text}
+            </Text>
+          ))}
         </Text>
       </View>
     </Pressable>

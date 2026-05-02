@@ -24,6 +24,11 @@ export function useScheduleData(selectedDay: Date) {
       const [u, f] = await Promise.all([repo.listByDay(day), repo.listFinishedByDay(day)]);
       setUpcoming(u);
       setFinished(f);
+      if (__DEV__) {
+        console.log(
+          `[Tempo][schedule-ui] selectedLocalDay=${day.toDateString()} upcoming=${u.length} finished=${f.length}`,
+        );
+      }
     } finally {
       setLoading(false);
     }

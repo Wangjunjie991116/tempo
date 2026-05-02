@@ -26,6 +26,43 @@ export function shouldMergeScheduleDevSeed(): boolean {
   return process.env.EXPO_PUBLIC_SCHEDULE_DEV_SEED === "1";
 }
 
+/**
+ * 仅在 __DEV__：把含 `tempo.schedule` 的键及摘要打到 Metro 终端（Expo Go 同理）。
+ * 打开日程页触发 `loadScheduleItems` 后即可在运行 `expo start` 的终端里搜索 `[Tempo][schedule-storage]`。
+ */
+export async function debugDumpScheduleStorage(reason: string): Promise<void> {
+  if (!__DEV__) return;
+  try {
+    const allKeys = await AsyncStorage.getAllKeys();
+    const tempoKeys = allKeys.filter((k) => k.includes("tempo.schedule")).sort();
+    const pairs: [string, string | null][] = [];
+    for (const k of tempoKeys) {
+      pairs.push([k, await AsyncStorage.getItem(k)]);
+    }
+    const marker = await AsyncStorage.getItem(DEV_BOOTSTRAP_MARKER_KEY);
+    console.log(
+      `[Tempo][schedule-storage] ${reason} __DEV__=${String(__DEV__)} mergeSeed=${String(shouldMergeScheduleDevSeed())} bootstrapMarker=${marker ?? "(null)"}`,
+    );
+    console.log(`[Tempo][schedule-storage] matching keys (${tempoKeys.length}): ${tempoKeys.join(", ") || "(none)"}`);
+    for (const [k, v] of pairs) {
+      if (v == null) {
+        console.log(`[Tempo][schedule-storage] ${k} => (null)`);
+        continue;
+      }
+      try {
+        const parsed: unknown = JSON.parse(v);
+        const summary =
+          Array.isArray(parsed) ? `array length=${parsed.length}` : `type=${typeof parsed}`;
+        console.log(`[Tempo][schedule-storage] ${k} => ${summary}; rawChars=${v.length}`);
+      } catch {
+        console.log(`[Tempo][schedule-storage] ${k} => invalid JSON, preview=${v.slice(0, 80)}`);
+      }
+    }
+  } catch (e) {
+    console.warn("[Tempo][schedule-storage] debugDump failed", e);
+  }
+}
+
 export function mergeWithSeedIfEmpty(existing: ScheduleItem[], seed: ScheduleItem[]): ScheduleItem[] {
   if (existing.length > 0) return existing;
   return seed;
@@ -60,15 +97,19 @@ export async function loadScheduleItems(): Promise<ScheduleItem[]> {
     }
   }
 
+  let result: ScheduleItem[];
   if (!shouldMergeScheduleDevSeed()) {
-    return parsed;
+    result = parsed;
+  } else {
+    const merged = mergeDevSeedIntoParsed(parsed);
+    if (JSON.stringify(merged) !== JSON.stringify(parsed)) {
+      await saveScheduleItems(merged);
+    }
+    result = merged;
   }
 
-  const merged = mergeDevSeedIntoParsed(parsed);
-  if (JSON.stringify(merged) !== JSON.stringify(parsed)) {
-    await saveScheduleItems(merged);
-  }
-  return merged;
+  if (__DEV__) void debugDumpScheduleStorage(`after loadScheduleItems (return ${result.length} items)`);
+  return result;
 }
 
 export async function saveScheduleItems(items: ScheduleItem[]): Promise<void> {

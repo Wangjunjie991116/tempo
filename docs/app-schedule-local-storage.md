@@ -48,3 +48,39 @@ ScheduleHomeScreen
 ## 5. 强制再清空一次（开发）
 
 把 `app/modules/schedule/repo/scheduleStorage.ts` 里的常量 **`DEV_SCHEDULE_BOOTSTRAP_VERSION`** 改一个新字符串（例如加个后缀），保存后冷启动 App；**仅 __DEV__** 下会再次并行清空上述日程键并重新写入 Mock。
+
+---
+
+## 6. 在 Expo Go 里查看「本地有没有存上」（AsyncStorage）
+
+AsyncStorage **没有**内置可视化界面，可用下面几种方式：
+
+### 6.1 看 Metro 终端日志（推荐，仓库已接入）
+
+1. 电脑上 **`pnpm dev:app` / `expo start`**，保持该终端在前台。  
+2. 手机 **Expo Go** 打开本项目，进入 **日程** Tab（会触发 `loadScheduleItems`）。  
+3. 在该终端里搜索 **`[Tempo][schedule-storage]`**。  
+4. 典型输出：  
+   - `mergeSeed=true/false`、`bootstrapMarker=…`  
+   - `matching keys (…): tempo.schedule.v3, tempo.schedule.devBootstrapVersion, …`  
+   - **`tempo.schedule.v3 => array length=6`** 表示桶里已有 6 条记录。
+
+若 **`array length=0`** 且 **`mergeSeed=false`**：当前未走开发注入（需查为何 `__DEV__` 为 false）。  
+若 **`length=6`** 但页面仍空：问题多在 **按选中曰过滤** 或 UI，而不是没写入存储。
+
+### 6.2 临时手写一行调试
+
+在 **`__DEV__`** 下的 `useEffect` 中：
+
+```ts
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const keys = (await AsyncStorage.getAllKeys()).filter((k) => k.includes("tempo.schedule"));
+console.log("tempo.schedule keys", keys, await AsyncStorage.multiGet(keys));
+```
+
+日志同样在 **Metro 终端**。
+
+### 6.3 第三方工具（可选）
+
+React Native Debugger、Flipper 等可查看 AsyncStorage；接 Expo Go 往往较繁琐，优先用 **§6.1**。

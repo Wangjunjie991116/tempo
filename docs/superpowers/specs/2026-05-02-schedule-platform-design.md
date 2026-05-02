@@ -45,7 +45,7 @@ listScheduleForDay(day: LocalCalendarDay): Promise<{ upcoming: ScheduleRecord[];
 ### 2.2 持久化
 
 - **事实来源**：设备本地 JSON 数组（AsyncStorage 或后继 SQLite）。  
-- **存储版本**：建议使用 **`tempo.schedule.v2`**（或与团队约定的单一 key + `schemaVersion` 字段）。  
+- **存储版本**：当前 AsyncStorage 键 **`tempo.schedule.v3`**（演进见 `LEGACY_SCHEDULE_STORAGE_KEYS`）；说明文档：`docs/app-schedule-local-storage.md`。  
 - **与服务的关系**：HTTP 仅用于 **解析等无状态调用**；**不向服务端上传完整日程库**，除非未来用户明确选择的新能力（不在本规格范围）。
 
 ### 2.3 UI：区块标题

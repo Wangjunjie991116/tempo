@@ -62,7 +62,7 @@
 - Modify: `app/package.json`
 - Create: `app/jest.config.js`
 
-- [ ] **Step 1: 安装运行时依赖**
+- [x] **Step 1: 安装运行时依赖**
 
 在项目根执行（pnpm workspace）：
 
@@ -72,7 +72,7 @@ pnpm --filter app add react-native-paper react-native-svg @react-native-async-st
 pnpm --filter app add -D jest-expo @testing-library/react-native @types/jest
 ```
 
-- [ ] **Step 2: 增加 `test` 脚本**
+- [x] **Step 2: 增加 `test` 脚本**
 
 在 `app/package.json` 的 `scripts` 中加入：
 
@@ -80,7 +80,7 @@ pnpm --filter app add -D jest-expo @testing-library/react-native @types/jest
 "test": "jest --watchAll=false --passWithNoTests"
 ```
 
-- [ ] **Step 3: 创建 `app/jest.config.js`**
+- [x] **Step 3: 创建 `app/jest.config.js`**
 
 ```js
 /** @type {import('jest').Config} */
@@ -92,7 +92,7 @@ module.exports = {
 };
 ```
 
-- [ ] **Step 4: 验证 Jest 可运行（尚无测试时应 0 suites 或退出 0）**
+- [x] **Step 4: 验证 Jest 可运行（尚无测试时应 0 suites 或退出 0）**
 
 ```bash
 cd /Users/wangjunjie/Documents/Work/Personal/tempo/app && pnpm exec jest --watchAll=false
@@ -100,7 +100,7 @@ cd /Users/wangjunjie/Documents/Work/Personal/tempo/app && pnpm exec jest --watch
 
 **Expected:** 进程退出码 `0`（无测试文件时可能提示 no tests found，可接受）。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/package.json app/jest.config.js pnpm-lock.yaml
@@ -119,7 +119,7 @@ git commit -m "chore(app): add schedule feature deps and jest-expo"
 - Create: `app/core/theme/TempoThemeProvider.tsx`
 - Create: `app/core/theme/index.ts`
 
-- [ ] **Step 1: 编写 `tokens.ts`（对齐 Figma light；数值可按 MCP 变量精调）**
+- [x] **Step 1: 编写 `tokens.ts`（对齐 Figma light；数值可按 MCP 变量精调）**
 
 ```ts
 /** Primitive design tokens — light only; dark reserved in types later. */
@@ -145,7 +145,7 @@ export const tempoPrimitives = {
 } as const;
 ```
 
-- [ ] **Step 2: 编写 `semantic.ts`**
+- [x] **Step 2: 编写 `semantic.ts`**
 
 ```ts
 import { tempoPrimitives } from "./tokens";
@@ -175,7 +175,7 @@ export function buildSemanticLight() {
 export type TempoSemantic = ReturnType<typeof buildSemanticLight>;
 ```
 
-- [ ] **Step 3: 编写 `paperTheme.ts`**
+- [x] **Step 3: 编写 `paperTheme.ts`**
 
 ```ts
 import { MD3LightTheme, configureFonts } from "react-native-paper";
@@ -208,7 +208,7 @@ export function buildPaperTheme(semantic: TempoSemantic) {
 }
 ```
 
-- [ ] **Step 4: 编写 `TempoThemeProvider.tsx`**
+- [x] **Step 4: 编写 `TempoThemeProvider.tsx`**
 
 ```tsx
 import { createContext, useContext, useMemo, type ReactNode } from "react";
@@ -236,7 +236,7 @@ export function useTempoTheme(): TempoSemantic {
 }
 ```
 
-- [ ] **Step 5: `app/core/theme/index.ts` re-export**
+- [x] **Step 5: `app/core/theme/index.ts` re-export**
 
 ```ts
 export { TempoThemeProvider, useTempoTheme } from "./TempoThemeProvider";
@@ -245,7 +245,7 @@ export type { TempoSemantic } from "./semantic";
 export { tempoPrimitives } from "./tokens";
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/core/theme
@@ -264,7 +264,7 @@ git commit -m "feat(app): add light design tokens and Paper theme bridge"
 - Create: `app/core/i18n/locales/en/notifications.json`
 - Create: `app/core/i18n/index.ts`
 
-- [ ] **Step 1: 英文 JSON 文案骨架**
+- [x] **Step 1: 英文 JSON 文案骨架**
 
 `app/core/i18n/locales/en/common.json`:
 
@@ -301,7 +301,7 @@ git commit -m "feat(app): add light design tokens and Paper theme bridge"
 }
 ```
 
-- [ ] **Step 2: `config.ts` 初始化**
+- [x] **Step 2: `config.ts` 初始化**
 
 ```ts
 import i18n from "i18next";
@@ -332,7 +332,7 @@ export function getDeviceLocaleTag(): string {
 export default i18n;
 ```
 
-- [ ] **Step 3: `index.ts`**
+- [x] **Step 3: `index.ts`**
 
 ```ts
 import "./config";
@@ -340,7 +340,7 @@ export { default as i18n } from "i18next";
 export { useTranslation } from "react-i18next";
 ```
 
-- [ ] **Step 4: 在 `App.tsx` 顶部副作用导入 i18n（在 Provider 之前）**
+- [x] **Step 4: 在 `App.tsx` 顶部副作用导入 i18n（在 Provider 之前）**
 
 在 `import { SessionProvider }` 上一行增加：
 
@@ -348,7 +348,7 @@ export { useTranslation } from "react-i18next";
 import "./core/i18n";
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/core/i18n app/App.tsx
@@ -363,7 +363,7 @@ git commit -m "feat(app): add i18n with English default"
 
 - Modify: `app/App.tsx`
 
-- [ ] **Step 1: 使用 `expo-google-fonts` 加载字体**
+- [x] **Step 1: 使用 `expo-google-fonts` 加载字体**
 
 在 `App.tsx` 中：
 
@@ -412,13 +412,13 @@ export default function App() {
 
 （保留原有 import，删除重复 `SafeAreaProvider` 包裹若冲突 — **最终应仅一层 `SafeAreaProvider`**。）
 
-- [ ] **Step 2: 安装 `expo-splash-screen`（若模板未包含）**
+- [x] **Step 2: 安装 `expo-splash-screen`（若模板未包含）**
 
 ```bash
 pnpm --filter app add expo-splash-screen
 ```
 
-- [ ] **Step 3: 真机冷启动目测**
+- [x] **Step 3: 真机冷启动目测**
 
 ```bash
 pnpm --filter app start
@@ -426,7 +426,7 @@ pnpm --filter app start
 
 **Expected:** 闪屏直至字体就绪后进入主导航，无红色报错。
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add app/App.tsx app/package.json pnpm-lock.yaml
@@ -445,7 +445,7 @@ git commit -m "feat(app): load Manrope and wrap TempoThemeProvider"
 - Create: `app/modules/schedule/repo/ScheduleRepository.ts`
 - Create: `app/modules/schedule/repo/__tests__/scheduleStorage.test.ts`
 
-- [ ] **Step 1: 写失败测试 — 合并 seed 逻辑**
+- [x] **Step 1: 写失败测试 — 合并 seed 逻辑**
 
 `app/modules/schedule/repo/__tests__/scheduleStorage.test.ts`:
 
@@ -470,13 +470,13 @@ describe("mergeWithSeedIfEmpty", () => {
 });
 ```
 
-- [ ] **Step 2: 运行测试 — Expected: FAIL（`mergeWithSeedIfEmpty` 未导出）**
+- [x] **Step 2: 运行测试 — Expected: FAIL（`mergeWithSeedIfEmpty` 未导出）**
 
 ```bash
 cd /Users/wangjunjie/Documents/Work/Personal/tempo/app && pnpm exec jest scheduleStorage.test.ts --watchAll=false
 ```
 
-- [ ] **Step 3: 实现类型与 seed**
+- [x] **Step 3: 实现类型与 seed**
 
 `app/modules/schedule/repo/types.ts`:
 
@@ -555,13 +555,13 @@ export async function saveScheduleItems(items: ScheduleItem[]): Promise<void> {
 }
 ```
 
-- [ ] **Step 4: 再跑测试 — Expected: PASS**
+- [x] **Step 4: 再跑测试 — Expected: PASS**
 
 ```bash
 pnpm exec jest scheduleStorage.test.ts --watchAll=false
 ```
 
-- [ ] **Step 5: `ScheduleRepository.ts` 门面**
+- [x] **Step 5: `ScheduleRepository.ts` 门面**
 
 ```ts
 import type { ScheduleItem } from "./types";
@@ -595,7 +595,7 @@ export function createScheduleRepository() {
 export type ScheduleRepository = ReturnType<typeof createScheduleRepository>;
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/modules/schedule/repo
@@ -616,7 +616,7 @@ git commit -m "feat(app): add schedule local storage and repository"
 - Modify: `app/core/navigation/MainTabNavigator.tsx`
 - Modify: `app/modules/schedule/screens/ScheduleHomeScreen.tsx`（从旧路径迁入，见 Task 7）
 
-- [ ] **Step 1: 增加路由常量 `app/core/navigation/routes.ts`**
+- [x] **Step 1: 增加路由常量 `app/core/navigation/routes.ts`**
 
 ```ts
 export const SCHEDULE_STACK = {
@@ -627,7 +627,7 @@ export const SCHEDULE_STACK = {
 
 （文件内 `MAIN_TAB` 等保持不变。）
 
-- [ ] **Step 2: 更新 `app/core/navigation/types.ts`（完整替换为下文，保留与现有 `Root` / `Auth` 一致）**
+- [x] **Step 2: 更新 `app/core/navigation/types.ts`（完整替换为下文，保留与现有 `Root` / `Auth` 一致）**
 
 ```ts
 import type { NavigatorScreenParams } from "@react-navigation/native";
@@ -660,7 +660,7 @@ export type RootStackParamList = {
 };
 ```
 
-- [ ] **Step 3: 创建 `app/modules/schedule/navigation/ScheduleStackNavigator.tsx`**
+- [x] **Step 3: 创建 `app/modules/schedule/navigation/ScheduleStackNavigator.tsx`**
 
 （自 `app/modules/schedule/navigation/` 到 `core` 为 **三截** `../../../core`.）
 
@@ -687,7 +687,7 @@ export function ScheduleStackNavigator() {
 }
 ```
 
-- [ ] **Step 4: `MainTabNavigator.tsx` 将 Schedule 替换为 Stack**
+- [x] **Step 4: `MainTabNavigator.tsx` 将 Schedule 替换为 Stack**
 
 ```tsx
 import { ScheduleStackNavigator } from "../../modules/schedule/navigation/ScheduleStackNavigator";
@@ -702,7 +702,7 @@ import { ScheduleStackNavigator } from "../../modules/schedule/navigation/Schedu
 
 （`tabBarLabel` 后续可改 `useTranslation`；首版可保留中文或同步改 i18n。）
 
-- [ ] **Step 5: Typecheck**
+- [x] **Step 5: Typecheck**
 
 ```bash
 cd /Users/wangjunjie/Documents/Work/Personal/tempo/app && pnpm exec tsc --noEmit
@@ -710,7 +710,7 @@ cd /Users/wangjunjie/Documents/Work/Personal/tempo/app && pnpm exec tsc --noEmit
 
 **Expected:** 无错（若 Screen 尚未创建会报错 — **顺序上应先 Task 7 最小 Screen 占位**，或本步先用空组件占位）。实施时可 **先创建 Task 7 的占位 Screen** 再跑 `tsc`。
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/core/navigation app/modules/schedule/navigation
@@ -728,7 +728,7 @@ git commit -m "feat(app): nest schedule native stack under tab"
 - Create: `app/modules/schedule/components/*`（见下）
 - Delete: `app/modules/schedule/ScheduleHomeScreen.tsx`（若仍存在则删除并修正所有 import）
 
-- [ ] **Step 1: 实现 `ScheduleHomeScreen` — 头部 + `DateStrip` + `FlatList` 分区**
+- [x] **Step 1: 实现 `ScheduleHomeScreen` — 头部 + `DateStrip` + `FlatList` 分区**
 
 要点：
 
@@ -740,17 +740,17 @@ git commit -m "feat(app): nest schedule native stack under tab"
 
 （具体 JSX 较长，实施时代码评审遵循 Figma 与 `semantic` 间距。）
 
-- [ ] **Step 2: `DateStrip.tsx`**
+- [x] **Step 2: `DateStrip.tsx`**
 
 - 生成当前周 7 天；选中项 `borderColor: theme.brand`；
 - 横向 `ScrollView`；`contentContainerStyle` padding 与稿一致。
 
-- [ ] **Step 3: `ScheduleCard.tsx` + `ScheduleTagBadge.tsx`**
+- [x] **Step 3: `ScheduleCard.tsx` + `ScheduleTagBadge.tsx`**
 
 - 禁止 Paper Card；自绘 `View` 圆角 `theme.radius.md`；
 - Tag 映射 `design_review` → Design Review 等英文（文案可走 i18n 或写死在 `en`）。
 
-- [ ] **Step 4: Commit（大块可拆两次 commit：components / screen）**
+- [x] **Step 4: Commit（大块可拆两次 commit：components / screen）**
 
 ```bash
 git add app/modules/schedule
@@ -767,18 +767,18 @@ git commit -m "feat(app): schedule home UI with local data and snackbar"
 - `app/modules/schedule/components/NotificationEmptyState.tsx`
 - `app/modules/schedule/hooks/useNotificationFeed.ts`
 
-- [ ] **Step 1: `NotificationInboxScreen` 使用 `Appbar.Header` + `Appbar.BackAction`**
+- [x] **Step 1: `NotificationInboxScreen` 使用 `Appbar.Header` + `Appbar.BackAction`**
 
 - `navigation.goBack()`；
 - `SegmentedButtons`（`react-native-paper`）两值：`activity` | `system`，对应 i18n `segmentActivity` / `segmentSystem`；
 - 列表：`List.Section` + `List.Item` + `Divider`；
 - Mock 数据：`useNotificationFeed(segment)` 返回数组；空数组渲染 `NotificationEmptyState`。
 
-- [ ] **Step 2: 空状态组件**
+- [x] **Step 2: 空状态组件**
 
 - SVG 插图或简化矢量圆+图标；英文标题/副标题走 `notifications` 命名空间。
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add app/modules/schedule/screens/NotificationInboxScreen.tsx app/modules/schedule/components/NotificationEmptyState.tsx
@@ -794,13 +794,13 @@ git commit -m "feat(app): notification inbox with Paper and segments"
 - Modify: `app/modules/schedule/components/DateStrip.tsx`
 - Modify: `app/modules/schedule/components/ScheduleCard.tsx`
 
-- [ ] **Step 1: 日期切换** — `LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)` 于选中变更时（Android 需 `UIManager.setLayoutAnimationEnabledExperimental` 一次性开启）。
+- [x] **Step 1: 日期切换** — `LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)` 于选中变更时（Android 需 `UIManager.setLayoutAnimationEnabledExperimental` 一次性开启）。
 
-- [ ] **Step 2: 卡片** — 轻 `scale` 可用手写 `Animated` 或维持 `opacity` 按压；**不引入 Reanimated** 除非 Step 1 不足。
+- [x] **Step 2: 卡片** — 轻 `scale` 可用手写 `Animated` 或维持 `opacity` 按压；**不引入 Reanimated** 除非 Step 1 不足。
 
-- [ ] **Step 3: 对照 Figma** — MCP `get_design_context` 拉 `8111:3433`、`8204:3164`、`8111:3850`、`8111:3912`、`8111:3945` 核对间距与字号。
+- [x] **Step 3: 对照 Figma** — MCP `get_design_context` 拉 `8111:3433`、`8204:3164`、`8111:3850`、`8111:3912`、`8111:3945` 核对间距与字号。
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git commit -am "polish(app): schedule micro-interactions and spacing"
@@ -814,7 +814,7 @@ git commit -am "polish(app): schedule micro-interactions and spacing"
 
 - Modify: `app/core/navigation/linking.ts`
 
-- [ ] **Step 1: 增加 path（若 `MainTab` linking 已支持嵌套）**
+- [x] **Step 1: 增加 path（若 `MainTab` linking 已支持嵌套）**
 
 ```ts
 schedule: {
@@ -828,9 +828,9 @@ schedule: {
 
 （具体键名须与 `routes.ts`、react-navigation **config** 一致；若与现有 `LINK_PATHS` 冲突则调整。）
 
-- [ ] **Step 2: README 一句** — 在仓库 `README.md` 或 `app/README` 增加「日程数据存 AsyncStorage key `tempo.schedule.v1`」（可选，**仅当团队需要**）。
+- [x] **Step 2: README 一句** — 在仓库 `README.md` 或 `app/README` 增加「日程数据存 AsyncStorage key `tempo.schedule.v1`」（可选，**仅当团队需要**）。
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git commit -am "docs(app): deep link for schedule notifications"

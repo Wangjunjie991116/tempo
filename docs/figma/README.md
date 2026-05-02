@@ -6,7 +6,7 @@
 
 | 文档 | 说明 |
 |------|------|
-| [schedule-rn.md](./schedule-rn.md) | 日程 Tab + 通知收件箱（RN，`2026-05-02` 冻结规格对应节点） |
+| [schedule-rn.md](./schedule-rn.md) | 日程 Tab + 通知收件箱（RN）；含 **一键直达链接**（占位文件 ID 替换后即可点开） |
 
 ## 如何打开节点
 

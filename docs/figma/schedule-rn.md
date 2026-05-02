@@ -3,7 +3,37 @@
 **规格来源：** [`docs/superpowers/specs/2026-05-02-schedule-rn-design.md`](../superpowers/specs/2026-05-02-schedule-rn-design.md)  
 **实施计划（含 MCP 对照步骤）：** [`docs/superpowers/plans/2026-05-02-schedule-rn-implementation.md`](../superpowers/plans/2026-05-02-schedule-rn-implementation.md)
 
-历史对话与规格中约定的设计稿节点大意如下（**未包含团队私有 `FILE_KEY`**，请用 Figma「复制链接」补全）。
+历史对话与规格中约定的设计稿节点大意如下。**一键直达**见下节「一键直达链接」：已将 `node-id` 按 Figma URL 规则拼入（冒号改为连字符）；仅需替换占位文件 ID 后即可点击打开。
+
+---
+
+## 一键直达链接（参数已拼接）
+
+下表及列表中的 **`TEMP_SCHEDULE_FIGMA_FILE_KEY`** 为占位符。请在本文件中 **全文查找替换** 为你的真实 **文件 ID**：打开 Figma 设计稿，复制浏览器地址，其中 `https://www.figma.com/design/` **之后、下一个 `/` 之前** 的那段字符串（示例：`https://www.figma.com/design/AbCdEfGh1234567890xyz/My-File` → ID 为 `AbCdEfGh1234567890xyz`）。
+
+替换完成后，下列 Markdown 链接即为可直接访问的节点链接。
+
+| 说明 | 打开节点 |
+|------|----------|
+| 日程首页（全屏，`8111:3433`） | [在 Figma 中打开](https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8111-3433) |
+| 日程首页（视口，`8204:3164`） | [在 Figma 中打开](https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8204-3164) |
+| 通知界面 A（`8111:3850`） | [在 Figma 中打开](https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8111-3850) |
+| 通知界面 B（`8111:3912`） | [在 Figma 中打开](https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8111-3912) |
+| 通知空状态（`8111:3945`） | [在 Figma 中打开](https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8111-3945) |
+| 变量 / Token 源（`1:181`） | [在 Figma 中打开](https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=1-181) |
+
+**纯文本（便于复制到浏览器或 IM）：**
+
+```text
+https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8111-3433
+https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8204-3164
+https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8111-3850
+https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8111-3912
+https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=8111-3945
+https://www.figma.com/design/TEMP_SCHEDULE_FIGMA_FILE_KEY?node-id=1-181
+```
+
+（将每行里的 `TEMP_SCHEDULE_FIGMA_FILE_KEY` 换成同一真实文件 ID 即可。）
 
 ---
 

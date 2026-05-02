@@ -13,7 +13,6 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { Snackbar } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useTranslation } from "../../../core/i18n";
@@ -25,6 +24,7 @@ import { DateStrip } from "../components/DateStrip";
 import { BellIcon } from "../components/icons/BellIcon";
 import { ScheduleDayPage } from "../components/ScheduleDayPage";
 import { useScheduleAllItems } from "../hooks/useScheduleAllItems";
+import type { ScheduleItem } from "../repo/types";
 import {
   enumerateDaysInclusive,
   indexOfSameDay,
@@ -64,7 +64,6 @@ export default function ScheduleHomeScreen() {
   const initialPagerIndex = Math.max(0, indexOfSameDay(days, initialDay));
 
   const { items } = useScheduleAllItems();
-  const [snackVisible, setSnackVisible] = useState(false);
   const pagerRef = useRef<FlatList<Date>>(null);
   /** `initialScrollIndex` 在大列表上偶发失败时，可见页会停在 index 0，与 DateStrip 选中日不一致 → 分区结果为空。*/
   const pagerAlignedRef = useRef(false);
@@ -78,8 +77,8 @@ export default function ScheduleHomeScreen() {
     });
   }, [days, pageWidth, selectedDay]);
 
-  const onCardPress = useCallback(() => {
-    setSnackVisible(true);
+  const onCardPress = useCallback((item: ScheduleItem) => {
+    console.log("[schedule] card pressed", { id: item.id, title: item.title });
   }, []);
 
   const scrollPagerToDay = useCallback(
@@ -209,14 +208,6 @@ export default function ScheduleHomeScreen() {
         }}
         removeClippedSubviews={false}
       />
-
-      <Snackbar
-        visible={snackVisible}
-        onDismiss={() => setSnackVisible(false)}
-        duration={2200}
-      >
-        {tr("schedule:detailSoon")}
-      </Snackbar>
     </SafeAreaView>
   );
 }

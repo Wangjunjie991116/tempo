@@ -13,7 +13,7 @@ type Props = {
   day: Date;
   allItems: ScheduleItem[];
   horizontalPadding: number;
-  onCardPress: () => void;
+  onCardPress: (item: ScheduleItem) => void;
 };
 
 export function ScheduleDayPage({
@@ -70,7 +70,7 @@ export function ScheduleDayPage({
                   key={item.id}
                   item={item}
                   variant="upcoming"
-                  onPress={onCardPress}
+                  onPress={() => onCardPress(item)}
                 />
               ))}
             </View>
@@ -92,7 +92,7 @@ export function ScheduleDayPage({
                   key={item.id}
                   item={item}
                   variant="finished"
-                  onPress={onCardPress}
+                  onPress={() => onCardPress(item)}
                 />
               ))}
             </View>

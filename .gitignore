@@ -13,3 +13,4 @@ venv/
 !.env.example
 !.env.dev
 .DS_Store
+.pnpm-store/**

@@ -17,6 +17,9 @@ function localCalendarKey(d: Date): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
+/** 日期与时间之间的分隔（字符 **•**，两侧空格）。 */
+const DATE_TIME_SEP = " • ";
+
 /**
  * 将卡片时段拆成可按角色上色的片段（日期 vs 24h 时间），与 {@link formatScheduleCardTimeRange} 语义一致。
  *
@@ -39,18 +42,18 @@ export function getScheduleCardTimeSegments(startMs: number, endMs: number): Sch
   if (localCalendarKey(start) === localCalendarKey(end)) {
     return [
       { role: "date", text: datePart },
-      { role: "sep", text: " " },
+      { role: "sep", text: DATE_TIME_SEP },
       { role: "time", text: `${t0} - ${t1}` },
     ];
   }
 
   return [
     { role: "date", text: datePart },
-    { role: "sep", text: " " },
+    { role: "sep", text: DATE_TIME_SEP },
     { role: "time", text: t0 },
     { role: "sep", text: " - " },
     { role: "date", text: localYmdSlash(end) },
-    { role: "sep", text: " " },
+    { role: "sep", text: DATE_TIME_SEP },
     { role: "time", text: t1 },
   ];
 }

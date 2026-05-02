@@ -2,7 +2,7 @@
   "tabTitle": "Schedule",
   "greetingHi": "Hi, {{name}}",
   "goodMorning": "Good morning.",
-  "sectionToday": "Today Schedule ({{count}})",
+  "sectionUpcoming": "Upcoming ({{count}})",
   "sectionFinished": "Finished ({{count}})",
   "detailSoon": "Coming soon.",
   "monthShortDec": "Dec",

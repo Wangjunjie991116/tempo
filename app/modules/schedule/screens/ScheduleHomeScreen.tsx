@@ -47,8 +47,8 @@ export default function ScheduleHomeScreen() {
     setSnackVisible(true);
   }, []);
 
-  const sectionTodayTitle = useMemo(
-    () => tr("schedule:sectionToday", { count: upcoming.length }),
+  const sectionUpcomingTitle = useMemo(
+    () => tr("schedule:sectionUpcoming", { count: upcoming.length }),
     [tr, upcoming.length],
   );
   const sectionFinishedTitle = useMemo(
@@ -107,7 +107,7 @@ export default function ScheduleHomeScreen() {
         </View>
 
         <View style={{ marginTop: t.space.xl, gap: t.space.md }}>
-          <ScheduleSectionHeader title={sectionTodayTitle} dotColor={t.brand} />
+          <ScheduleSectionHeader title={sectionUpcomingTitle} dotColor={t.brand} />
           {upcoming.map((item) => (
             <ScheduleCard
               key={item.id}

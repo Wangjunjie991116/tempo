@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 在 Expo `app/` 中交付与设计稿高还原的日程 Tab（日期条 + Today / Finished + 自绘卡片与时间轴）、铃铛进入的通知收件箱（Segment + Paper List + 空状态）、本地持久化 Mock 日程数据、Manrope + light 主题 token、`i18n` 默认英文、卡片点击 Paper Snackbar「敬请期待」，并加入适度微交互。
+**Goal:** 在 Expo `app/` 中交付与设计稿高还原的日程 Tab（日期条 + Upcoming / Finished + 自绘卡片与时间轴）、铃铛进入的通知收件箱（Segment + Paper List + 空状态）、本地持久化日程数据（Release 无内置 Mock seed）、Manrope + light 主题 token、`i18n` 默认英文、卡片点击 Paper Snackbar「敬请期待」，并加入适度微交互。
 
 **Architecture:** `Schedule` Tab 内嵌 Native Stack；`core/theme` 提供语义 token 与 Paper `MD3LightTheme` 桥接；`core/i18n` 三命名空间；`modules/schedule/repo` 对 AsyncStorage 持久化；UI 核心用手写组件 + `react-native-svg`，Paper 用于 Appbar / List / Snackbar / SegmentedButtons；字体经 `expo-font` + `@expo-google-fonts/manrope` 在根组件就绪后挂载导航树。
 
@@ -37,7 +37,7 @@
 | **Create** `app/modules/schedule/components/DateStrip.tsx` | 横向周选择 + 微交互 |
 | **Create** `app/modules/schedule/components/ScheduleTagBadge.tsx` | Design Review / Workshop / Brainstorming 色 |
 | **Create** `app/modules/schedule/components/ScheduleCard.tsx` | 自绘卡片 + Pressable 反馈 |
-| **Create** `app/modules/schedule/components/ScheduleSectionHeader.tsx` | Today / Finished 标题行 |
+| **Create** `app/modules/schedule/components/ScheduleSectionHeader.tsx` | Upcoming / Finished 标题行 |
 | **Create** `app/modules/schedule/components/TimelineRail.tsx` | 左侧竖线 + 月份节点 |
 | **Create** `app/modules/schedule/components/icons/*.tsx` | 铃铛、chevron 等 SVG（按需拆分） |
 | **Create** `app/modules/schedule/components/NotificationEmptyState.tsx` | 空状态插画区 + 文案 |
@@ -281,7 +281,7 @@ git commit -m "feat(app): add light design tokens and Paper theme bridge"
   "tabTitle": "Schedule",
   "greetingHi": "Hi, {{name}}",
   "goodMorning": "Good morning.",
-  "sectionToday": "Today Schedule ({{count}})",
+  "sectionUpcoming": "Upcoming ({{count}})",
   "sectionFinished": "Finished ({{count}})",
   "detailSoon": "Coming soon.",
   "monthShortDec": "Dec"

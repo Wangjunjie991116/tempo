@@ -57,7 +57,7 @@
 
 - **Main Tab「日程」**：由单层 Screen 升级为 **`Schedule` 内嵌 Native Stack**（与 `User` Tab 嵌 Stack 一致）。
 - **路由示例（命名待 `routes.ts` 落地）**  
-  - `ScheduleHome` — 日程主界面（日期条 + Today / Finished）。  
+  - `ScheduleHome` — 日程主界面（日期条 + Upcoming / Finished）。  
   - `NotificationInbox` — 铃铛进入；**顶部 Appbar + Segment**；下方列表；空状态同屏替换。
 - **深层链接**：可在 `linking.ts` 预留 `notifications` path（非必须首版完成）。
 
@@ -107,7 +107,7 @@
 
 - 推荐 **`i18next` + `react-i18next` + `expo-localization`**（或等价），`fallbackLng: 'en'`。
 - 命名空间：`common`、`schedule`、`notifications`。
-- **通知 Segment 标签**、**空状态**、**Toast**、**区块标题**（Today Schedule / Finished）全部走文案键。
+- **通知 Segment 标签**、**空状态**、**Toast**、**区块标题**（Upcoming / Finished）全部走文案键。
 
 ---
 

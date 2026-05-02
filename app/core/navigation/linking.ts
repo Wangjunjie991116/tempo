@@ -4,6 +4,7 @@ import {
   LINK_PATHS,
   MAIN_TAB,
   ROOT_STACK,
+  SCHEDULE_STACK,
   USER_STACK,
 } from "./routes";
 import type { RootStackParamList } from "./types";
@@ -22,7 +23,13 @@ export const tempoLinking: LinkingOptions<RootStackParamList> = {
       [ROOT_STACK.Main]: {
         path: LINK_PATHS.main,
         screens: {
-          [MAIN_TAB.Schedule]: LINK_PATHS.schedule,
+          [MAIN_TAB.Schedule]: {
+            path: LINK_PATHS.schedule,
+            screens: {
+              [SCHEDULE_STACK.ScheduleHome]: "",
+              [SCHEDULE_STACK.NotificationInbox]: "notifications",
+            },
+          },
           [MAIN_TAB.Finance]: LINK_PATHS.finance,
           [MAIN_TAB.User]: {
             path: LINK_PATHS.user,

@@ -1,5 +1,10 @@
 import type { NavigatorScreenParams } from "@react-navigation/native";
-import { AUTH_STACK, MAIN_TAB, ROOT_STACK, USER_STACK } from "./routes";
+import { AUTH_STACK, MAIN_TAB, ROOT_STACK, SCHEDULE_STACK, USER_STACK } from "./routes";
+
+export type ScheduleStackParamList = {
+  [SCHEDULE_STACK.ScheduleHome]: undefined;
+  [SCHEDULE_STACK.NotificationInbox]: undefined;
+};
 
 export type UserStackParamList = {
   [USER_STACK.UserHome]: undefined;
@@ -7,7 +12,7 @@ export type UserStackParamList = {
 };
 
 export type MainTabParamList = {
-  [MAIN_TAB.Schedule]: undefined;
+  [MAIN_TAB.Schedule]: NavigatorScreenParams<ScheduleStackParamList>;
   [MAIN_TAB.Finance]: undefined;
   [MAIN_TAB.User]: NavigatorScreenParams<UserStackParamList>;
 };

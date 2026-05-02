@@ -12,10 +12,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const web = process.env.EXPO_PUBLIC_WEB_BASE_URL ?? "";
   const api = process.env.EXPO_PUBLIC_API_BASE_URL ?? "";
 
+  const existingPlugins = (config.plugins ?? []) as NonNullable<ExpoConfig["plugins"]>;
+
   return {
     ...config,
     name: config.name ?? "Tempo",
     slug: config.slug ?? "tempo",
+    plugins: [...existingPlugins, "expo-font", "expo-localization"],
     ios: {
       ...config.ios,
       infoPlist: {

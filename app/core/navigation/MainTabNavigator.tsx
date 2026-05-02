@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import FinanceHomeScreen from "../../modules/finance/FinanceHomeScreen";
-import ScheduleHomeScreen from "../../modules/schedule/ScheduleHomeScreen";
+import { ScheduleStackNavigator } from "../../modules/schedule/navigation/ScheduleStackNavigator";
 import UserHomeScreen from "../../modules/user/UserHomeScreen";
 import WebTestScreen from "../../modules/user/WebTestScreen";
 import { MAIN_TAB, USER_STACK } from "./routes";
@@ -33,7 +33,7 @@ export function MainTabNavigator() {
     <Tab.Navigator screenOptions={{ headerShown: false }}>
       <Tab.Screen
         name={MAIN_TAB.Schedule}
-        component={ScheduleHomeScreen}
+        component={ScheduleStackNavigator}
         options={{ tabBarLabel: "日程", headerTitle: "日程" }}
       />
       <Tab.Screen

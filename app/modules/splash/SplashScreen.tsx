@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSession } from "../../core/session";
-import { AUTH_STACK, MAIN_TAB, ROOT_STACK } from "../../core/navigation/routes";
+import { AUTH_STACK, MAIN_TAB, ROOT_STACK, SCHEDULE_STACK } from "../../core/navigation/routes";
 import type { RootStackParamList } from "../../core/navigation/types";
 
 const SPLASH_VISIBLE_MS = 2000;
@@ -35,6 +35,7 @@ export default function SplashScreen({ navigation }: Props) {
         if (authRef.current) {
           navigation.replace(ROOT_STACK.Main, {
             screen: MAIN_TAB.Schedule,
+            params: { screen: SCHEDULE_STACK.ScheduleHome },
           });
         } else {
           navigation.replace(ROOT_STACK.Auth, {

@@ -1,0 +1,12 @@
+{
+  "tabTitle": "Schedule",
+  "greetingHi": "Hi, {{name}}",
+  "goodMorning": "Good morning.",
+  "sectionToday": "Today Schedule ({{count}})",
+  "sectionFinished": "Finished ({{count}})",
+  "detailSoon": "Coming soon.",
+  "monthShortDec": "Dec",
+  "tagDesignReview": "Design Review",
+  "tagWorkshop": "Workshop",
+  "tagBrainstorm": "Brainstorming"
+}

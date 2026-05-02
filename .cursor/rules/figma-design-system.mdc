@@ -1,0 +1,37 @@
+---
+description: 将 Figma 设计落地到 Tempo 时的组件、样式与双端（RN / Vue）约定
+globs:
+  - app/**/*.tsx
+  - web/**/*.vue
+  - web/**/*.css
+---
+
+# Tempo × Figma 落地规则
+
+产品形态见 `docs/superpowers/specs/2026-04-30-tempo-design.md`：**Expo RN 壳** + **WebView 内嵌 Vue**。从 Figma 实现 UI 时须区分「原生壳」与「Web 内嵌页」，避免把 Web 专用样式写进 RN，反之亦然。
+
+## 原生壳（`app/`）
+
+- 新屏幕放在 `app/modules/<domain>/`，导出默认函数组件；路由与栈定义在 `app/core/navigation/`（含 `routes` 常量与类型）。
+- 布局优先 `SafeAreaView`（`react-native-safe-area-context`），全屏渐变/模糊可沿用 `SplashScreen` 中的 `LinearGradient`、`BlurView`（`expo-linear-gradient`、`expo-blur`）组合方式。
+- 样式使用 `StyleSheet.create`，放在文件底部；组件名 PascalCase，屏幕文件 `*Screen.tsx`。
+- 颜色与间距若在设计稿中系统化，优先抽到模块内常量或后续集中的 theme（当前多处裸十六进制，新实现应与设计稿 token 对齐并逐步收敛）。
+- Tab / Stack 的 `headerShown`、标题以现有 `MainTabNavigator` / `AuthNavigator` 为准扩展。
+
+## Web 内嵌（`web/`）
+
+- 页面与组件使用 Vue 3 `<script setup lang="ts">` + 单文件组件；业务入口现为 `web/src/App.vue`。
+- **颜色与排版**：优先使用 `web/src/style.css` 中 `:root` 的 CSS 变量（如 `--text`、`--text-h`、`--bg`、`--border`、`--accent` 及暗色 `@media (prefers-color-scheme: dark)`），不要在模板里随意新增与设计 token 无关的硬编码色值。
+- 新增全局样式时扩展 `style.css` 的变量与语义化类；组件局部样式可用 `<style scoped>`，但主题色应引用 `var(--*)`。
+- 与 RN 通信的配置遵循现有约定：`window.__TEMPO_CONFIG__`（由壳注入）与 `import.meta.env` 的开发兜底（见 `App.vue`）。
+
+## Figma MCP / 协作
+
+- 在 Cursor 中启用 **Figma MCP** 后，可用 **`create_design_system_rules`** 等工具拉取模板并迭代本文件；画布写入、变量绑定等需先阅读 **figma-use** 技能再调用 **`use_figma`**。
+- **Code Connect**：组件与 Figma 控件映射时，把模板放在仓库约定路径（如组件旁的 `.figma.tsx` / Code Connect 文档），便于设计与代码双向对齐。
+
+## 禁止与注意
+
+- 不要在 `service/` 中实现 UI。
+- WebView 内页面勿依赖仅 RN 可用的 API；RN 壳勿假设 Vite 专有全局变量。
+- 实现设计稿时保持 **pnpm**、**Node ≥24** 与既有 monorepo 脚本约定不变。

@@ -1,3 +1,4 @@
+/** 导航：根栈、Tab、Auth、Deep Link 与各 Navigator 组件导出。 */
 export { AuthNavigationSync } from "./AuthNavigationSync";
 export { AuthNavigator } from "./AuthNavigator";
 export { tempoLinking } from "./linking";

@@ -1,6 +1,9 @@
 import type { NavigatorScreenParams } from "@react-navigation/native";
 import { AUTH_STACK, MAIN_TAB, ROOT_STACK, SCHEDULE_STACK, USER_STACK } from "./routes";
 
+/**
+ * React Navigation 各层 ParamList 定义（与 `routes.ts` 中的 `name` 一一对应）。
+ */
 export type ScheduleStackParamList = {
   [SCHEDULE_STACK.ScheduleHome]: undefined;
   [SCHEDULE_STACK.NotificationInbox]: undefined;

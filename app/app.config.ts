@@ -8,6 +8,15 @@ loadEnv({ path: path.join(appRoot, ".env"), override: true });
 loadEnv({ path: path.join(appRoot, ".env.local"), override: true });
 loadEnv({ path: path.join(appRoot, ".env.dev"), override: true });
 
+/**
+ * Expo 动态配置：合并 `app.json` 基底，注入 dotenv 中的 Web/API 基址到 `extra`，并追加插件。
+ *
+ * @param config Expo 从 `app.json` 读入的上下文配置
+ * @returns 最终 `ExpoConfig`（供 `expo start` / EAS 使用）
+ *
+ * @example
+ * `EXPO_PUBLIC_WEB_BASE_URL` → `extra.tempoWebBaseUrl`，供 {@link TEMPO_WEB_URL} 读取。
+ */
 export default ({ config }: ConfigContext): ExpoConfig => {
   const web = process.env.EXPO_PUBLIC_WEB_BASE_URL ?? "";
   const api = process.env.EXPO_PUBLIC_API_BASE_URL ?? "";
@@ -17,7 +26,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   return {
     ...config,
     name: config.name ?? "Tempo",
-    slug: config.slug ?? "tempo",
+    slug: config.slug ?? "Tempo",
     plugins: [...existingPlugins, "expo-font", "expo-localization"],
     ios: {
       ...config.ios,

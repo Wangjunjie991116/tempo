@@ -9,6 +9,13 @@ import {
 } from "./routes";
 import type { RootStackParamList } from "./types";
 
+/**
+ * Deep Link / Universal Link 配置：`tempo://` 与 `https://tempo.app` 前缀映射到根栈与各 Tab 路径。
+ *
+ * @example
+ * - 日程首页：`tempo://app/schedule`、`https://tempo.app/app/schedule`
+ * - 通知收件箱：`.../schedule/notifications`
+ */
 export const tempoLinking: LinkingOptions<RootStackParamList> = {
   prefixes: ["tempo://", "https://tempo.app"],
   config: {

@@ -1,5 +1,17 @@
 import { tempoPrimitives } from "./tokens";
 
+/**
+ * 将原始 token（`tempoPrimitives`）组装为 UI 使用的语义色与间距别名（亮色主题单一路径）。
+ *
+ * @returns `TempoSemantic` — 供 `ThemeProvider` / Paper 主题桥接消费
+ *
+ * @example
+ * ```ts
+ * const semantic = buildSemanticLight();
+ * semantic.brand; // 品牌主色
+ * semantic.space.lg; // 间距 token
+ * ```
+ */
 export function buildSemanticLight() {
   const p = tempoPrimitives;
   return {
@@ -22,4 +34,5 @@ export function buildSemanticLight() {
   };
 }
 
+/** {@link buildSemanticLight} 的返回类型，用于 Paper / 组件 props。 */
 export type TempoSemantic = ReturnType<typeof buildSemanticLight>;

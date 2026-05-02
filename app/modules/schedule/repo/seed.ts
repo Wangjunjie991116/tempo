@@ -4,7 +4,12 @@ import type { ScheduleItem } from "./types";
  * 内置演示日程（写死在代码里）。时间为 **UTC** 的 **2026-05-02** 当日区间。
  *
  * 列表按 **设备本地日历日** 分区（`partitionScheduleForDay`）：在绝大多数时区都会落在本地 5 月 2 日；
- * 极西侧（约 UTC−11 及以西）或极东侧（约 UTC+14）仍可能出现「UTC 的 5 月 2 日」对应本地 **5 月 1 日或 5 月 3 日」，此时请在日期条点到本地对应的那一天查看。
+ * 极西侧（约 UTC−11 及以西）或极东侧（约 UTC+14）仍可能出现「UTC 的 5 月 2 日」对应本地 **5 月 1 日或 5 月 3 日**」，此时请在日期条点到本地对应的那一天查看。
+ *
+ * @example 与仓储联动
+ * ```ts
+ * // loadScheduleItems() 首次会将本常量克隆写入 AsyncStorage 再返回同结构数组
+ * ```
  */
 export const DEFAULT_SCHEDULE_ITEMS: ScheduleItem[] = [
   {

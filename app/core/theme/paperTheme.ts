@@ -10,6 +10,17 @@ const fontConfig = {
   labelLarge: { fontFamily: "Manrope_600SemiBold", fontWeight: "600" as const },
 };
 
+/**
+ * 将 Tempo 语义 token **映射**为 React Native Paper 的 `Theme`（MD3 Light 基底 + Manrope 字体）。
+ *
+ * @param semantic {@link buildSemanticLight} 的产物
+ *
+ * @example
+ * ```tsx
+ * const paperTheme = buildPaperTheme(buildSemanticLight());
+ * <PaperProvider theme={paperTheme}>...</PaperProvider>
+ * ```
+ */
 export function buildPaperTheme(semantic: TempoSemantic) {
   const base = MD3LightTheme;
   return {

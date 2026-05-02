@@ -1,3 +1,6 @@
+/**
+ * 导航路由 **字符串常量** 与 Deep Link 路径段（`LINK_PATHS`），供 Navigator `name` / `linking.config` 使用。
+ */
 export const ROOT_STACK = {
   Splash: "Splash",
   Auth: "Auth",

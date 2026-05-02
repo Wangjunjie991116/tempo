@@ -1,4 +1,4 @@
-/** Primitive design tokens — light only; dark reserved in types later. */
+/** 设计 primitive token（当前仅亮色；暗色占位可在类型层扩展）。 */
 export const tempoPrimitives = {
   color: {
     backgroundTertiary: "#f5f5f5",

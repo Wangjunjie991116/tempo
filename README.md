@@ -55,7 +55,7 @@ pnpm dev:app
 - 日程首页：`tempo://app/schedule`、`https://tempo.app/app/schedule`
 - 通知收件箱：`tempo://app/schedule/notifications`、`https://tempo.app/app/schedule/notifications`
 
-本地日程数据默认存在 AsyncStorage，当前键名为 **`tempo.schedule.v3`**。开发与 Mock 注入、清空逻辑见 [`docs/app-schedule-local-storage.md`](docs/app-schedule-local-storage.md)。
+本地日程存在 AsyncStorage（键 **`tempo.schedule.v3`**）；空库时写入代码内 **`DEFAULT_SCHEDULE_ITEMS`**。说明见 [`docs/app-schedule-local-storage.md`](docs/app-schedule-local-storage.md)。
 
 ### 真机 WebView（避免 `Could not connect to the server` / -1004）
 

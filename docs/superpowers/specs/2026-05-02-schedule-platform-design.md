@@ -17,7 +17,7 @@
   - **未完成（upcoming）**：`status === upcoming` 且 **`startAt` 落在 D**（按设备本地日历解释 `startAt`；见 §6 时区）。  
   - **已完成（finished）**：`status === finished` 且 **`endAt` 落在 D**；若 **`endAt` 缺失**，则 **回退 `startAt` 落在 D**。
 - **UI 文案**：上段区块固定为 **Upcoming**（对应未完成列表），下段为 **Finished**；**禁止**使用 **Today** / **TodaySchedule** 等暗示「永远是今天」的主标题；文案走 i18n（如 “Upcoming ({{count}})”）。
-- **演示数据（开发期 Mock）**：仅在 **开发者个人本地调试** 使用（如 `__DEV__` 或显式环境开关）；**正式发布给用户时：无内置 seed，空库即空列表**（含首次安装）。
+- **内置默认数据**：客户端 **`DEFAULT_SCHEDULE_ITEMS`**（`app/modules/schedule/repo/seed.ts`，固定 **6** 条 JSON）；**AsyncStorage 为空时写入**，之后与普通持久化一致；锚定日历曰见 `docs/app-schedule-local-storage.md`。
 - **日期切换**：支持 **横向滑动** 切换日历日（与日期条选中态双向同步）。
 - **时区**：解析与展示支持 **IANA 时区**（设备变更、用户偏好、语音解析请求）。
 - **语音**：调用 **`POST /api/v1/schedule/parse`**（可演进）；**用户确认前不得写入本地持久化数组**，仅内存草稿；确认后 **仅写入本地**。
@@ -45,7 +45,7 @@ listScheduleForDay(day: LocalCalendarDay): Promise<{ upcoming: ScheduleRecord[];
 ### 2.2 持久化
 
 - **事实来源**：设备本地 JSON 数组（AsyncStorage 或后继 SQLite）。  
-- **存储版本**：当前 AsyncStorage 键 **`tempo.schedule.v3`**（演进见 `LEGACY_SCHEDULE_STORAGE_KEYS`）；说明文档：`docs/app-schedule-local-storage.md`。  
+- **存储**：AsyncStorage 键 **`tempo.schedule.v3`**；详见 [`docs/app-schedule-local-storage.md`](../../app-schedule-local-storage.md)。  
 - **与服务的关系**：HTTP 仅用于 **解析等无状态调用**；**不向服务端上传完整日程库**，除非未来用户明确选择的新能力（不在本规格范围）。
 
 ### 2.3 UI：区块标题
@@ -152,10 +152,10 @@ listScheduleForDay(day: LocalCalendarDay): Promise<{ upcoming: ScheduleRecord[];
 
 ---
 
-## 7. 演示数据（仅开发 Mock）
+## 7. 内置默认日程（代码常量）
 
-- **正式用户**：无内置 seed；空存储 → **两区块均为空**（空状态按产品设计）。  
-- **开发者本地**：可通过 **`__DEV__`**、构建 flavor 或 **`EXPO_PUBLIC_SCHEDULE_DEV_SEED=1`** 等开关注入示例数据（例如锚定「今天」的 **4 upcoming + 2 finished**），字段满足 §1.1；**禁止**在 Release / 商店包默认开启。
+- **`DEFAULT_SCHEDULE_ITEMS`**：4 upcoming + 2 finished，写死在 `seed.ts`，ISO 锚定 **2026-05-02**。  
+- **`loadScheduleItems`**：若本地无数据则克隆该常量写入 **`tempo.schedule.v3`**；已有数据则直接读取（用户可覆盖）。
 
 ---
 
@@ -165,13 +165,13 @@ listScheduleForDay(day: LocalCalendarDay): Promise<{ upcoming: ScheduleRecord[];
 - 横滑切换日：列表与 DateStrip 一致。  
 - 语音：确认前无新本地持久化条目；确认后出现。  
 - **服务端**：无日程存储与列表接口；仅 **`parse`** 可按契约返回草稿。  
-- **Release 构建**：新用户无自动 Mock 数据。
+- **内置默认**：空存储时写入 **`DEFAULT_SCHEDULE_ITEMS`**（§7）；选中日需覆盖锚定曰才有条目。
 
 ---
 
 ## 9. 自检（占位 / 一致性 / 范围 / 歧义）
 
-- **已定**：客户端 **`listScheduleForDay`**；Upcoming + Finished 文案；服务端 **不落库、无 GET 日程**；语音确认后仅本地写；横滑、时区；seed **仅开发**。  
+- **已定**：客户端按曰过滤；**`DEFAULT_SCHEDULE_ITEMS`** 空库写入；Upcoming + Finished 文案；服务端 **不落库**；语音确认后本地写；横滑、时区。  
 - **实现期须对齐**：自然日边界计算的单一实现源与测试向量（客户端单测即可）。
 
 ---

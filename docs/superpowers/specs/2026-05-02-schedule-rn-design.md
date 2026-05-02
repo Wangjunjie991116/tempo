@@ -75,9 +75,9 @@
 - Key：`tempo.schedule.v3`（命名空间版本化）；存储/Mock 链路见 [`docs/app-schedule-local-storage.md`](../../app-schedule-local-storage.md)。  
 - 内容：`ScheduleItem[]`（含 `id`、`title`、`start`、`end`、`tag`、`status`、`attendees` 等与设计一致的字段）。
 
-### 5.3 Mock
+### 5.3 内置默认数据
 
-- 内置少量与设计稿文案对齐的 **英文** seed（与默认语言一致）；首次启动写入存储。
+- **英文** 常量 **`DEFAULT_SCHEDULE_ITEMS`**（`app/modules/schedule/repo/seed.ts`）；本地 **空存储时写入** AsyncStorage，详见 [`docs/app-schedule-local-storage.md`](../../app-schedule-local-storage.md)。
 
 ---
 

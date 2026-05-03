@@ -1,0 +1,12 @@
+{
+  "fabA11y": "Open assistant",
+  "voiceButtonA11y": "Hold to speak; release to send",
+  "panelTitle": "Assistant",
+  "panelHint": "Say what you need; release to turn speech into text and route actions.",
+  "assistantIntro": "Hi, I’m your assistant. Hold the microphone to talk; release to send what was recognized.",
+  "assistantAck": "Got it. Next we can route this to schedule, finance, and other tabs as we wire orchestration.",
+  "holdToSpeak": "Hold to speak",
+  "holdListening": "Listening…",
+  "speechUnavailable": "Speech recognition is unavailable. Check the mic and permissions.",
+  "speechErrorWithDetail": "Speech recognition failed: {{detail}}"
+}

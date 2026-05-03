@@ -1,0 +1,12 @@
+{
+  "fabA11y": "打开智能助手",
+  "voiceButtonA11y": "按住说话，松开发送",
+  "panelTitle": "智能助手",
+  "panelHint": "口述你想做的事；松开后我会转成文字并可对接各业务能力。",
+  "assistantIntro": "你好，我是智能助手。按住下方麦克风说话，松手后即可发送语音识别结果。",
+  "assistantAck": "已收到。后续可把指令分发给日程、财务等 Tab（能力迭代中）。",
+  "holdToSpeak": "按住说话",
+  "holdListening": "正在聆听…",
+  "speechUnavailable": "语音识别暂不可用，请检查麦克风与系统权限或稍后再试。",
+  "speechErrorWithDetail": "语音识别出现问题：{{detail}}"
+}

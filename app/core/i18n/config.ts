@@ -2,9 +2,11 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import * as Localization from "expo-localization";
 
+import aiEn from "./locales/en/ai.json";
 import commonEn from "./locales/en/common.json";
 import notificationsEn from "./locales/en/notifications.json";
 import scheduleEn from "./locales/en/schedule.json";
+import aiZh from "./locales/zh/ai.json";
 import commonZh from "./locales/zh/common.json";
 import notificationsZh from "./locales/zh/notifications.json";
 import scheduleZh from "./locales/zh/schedule.json";
@@ -13,11 +15,13 @@ import { FIXED_APP_LANGUAGE } from "./languagePreference";
 /** i18next `resources`：`en` / `zh` 命名空间与键一致；缺失键回退 {@link fallbackLng}。 */
 export const resources = {
   en: {
+    ai: aiEn,
     common: commonEn,
     schedule: scheduleEn,
     notifications: notificationsEn,
   },
   zh: {
+    ai: aiZh,
     common: commonZh,
     schedule: scheduleZh,
     notifications: notificationsZh,
@@ -48,7 +52,7 @@ void i18n.use(initReactI18next).init({
   supportedLngs: ["en", "zh"],
   interpolation: { escapeValue: false },
   defaultNS: "common",
-  ns: ["common", "schedule", "notifications"],
+  ns: ["common", "schedule", "notifications", "ai"],
 });
 
 /**

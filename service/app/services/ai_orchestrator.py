@@ -75,6 +75,30 @@ def _extract_json(s: str) -> dict | None:
     return None
 
 
+def _parse_xml_tool_call(text: str) -> dict | None:
+    """Parse <tool_call> XML format that some models output instead of ReAct.
+    Returns {"type": "action", "thought": str, "action": str, "action_input": dict} or None.
+    """
+    m = re.search(r"<tool_call\s+name=\"(\w+)\"\s*>(.*?)</tool_call>", text, re.DOTALL)
+    if not m:
+        return None
+
+    action_name = m.group(1)
+    inner = m.group(2)
+
+    action_input: dict[str, str] = {}
+    for param_m in re.finditer(r"<parameter\s+name=\"([^\"]+)\"[^>]*>(.*?)</parameter>", inner, re.DOTALL):
+        key = param_m.group(1)
+        val = param_m.group(2).strip()
+        action_input[key] = val
+
+    if not action_input:
+        return None
+
+    thought = text[:m.start()].strip()
+    return {"type": "action", "thought": thought, "action": action_name, "action_input": action_input}
+
+
 def _parse_react_output(text: str) -> dict:
     """Parse ReAct format output from LLM.
     Returns: {"type": "action", "thought": str, "action": str, "action_input": dict} |
@@ -99,6 +123,11 @@ def _parse_react_output(text: str) -> dict:
             return {"type": "action", "thought": thought, "action": action_name, "action_input": action_input}
         except json.JSONDecodeError:
             pass
+
+    # Fallback: some models output <tool_call> XML instead of ReAct text
+    xml_tool = _parse_xml_tool_call(text)
+    if xml_tool:
+        return xml_tool
 
     # Fallback: try any JSON block
     json_match = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)

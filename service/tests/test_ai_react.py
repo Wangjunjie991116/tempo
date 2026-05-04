@@ -38,6 +38,21 @@ def test_parse_json_block_fallback():
     assert result["command"]["action"] == "chat"
 
 
+def test_parse_xml_tool_call():
+    text = """Thought: 需要解析时间
+<tool_call name="parse_time">
+<parameter name="expression" string="true">今天上午8:00</parameter>
+<parameter name="timezone" string="true">Asia/Shanghai</parameter>
+<parameter name="reference_time" string="true">2026-05-05T00:22:02+08:00</parameter>
+</tool_call>"""
+
+    result = _parse_react_output(text)
+    assert result["type"] == "action"
+    assert result["action"] == "parse_time"
+    assert result["action_input"]["expression"] == "今天上午8:00"
+    assert result["action_input"]["timezone"] == "Asia/Shanghai"
+
+
 def test_parse_empty_fallback():
     result = _parse_react_output("")
     assert result["type"] == "final"

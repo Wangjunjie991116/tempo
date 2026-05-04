@@ -63,6 +63,11 @@ Thought: your reasoning
 Final Answer: {"action": "create_schedule|update_schedule|delete_schedule|query_schedule|chat", "params": {...}, "confidence": 0.x}
 ```
 
+CRITICAL RULES:
+- Action Input MUST be valid JSON, not XML. Do NOT use `<tool_call>`, `<parameter>`, or any XML tags.
+- Do NOT output markdown code blocks around Action Input. Just raw JSON after "Action Input:".
+- Do NOT wrap the Final Answer in ```json. Just raw JSON after "Final Answer:".
+
 ## Confidence Rules
 - If the request is ambiguous (unclear time, missing title, vague intent), set confidence below 0.7
 - If confident about all parameters, set confidence to 0.9 or above

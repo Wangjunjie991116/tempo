@@ -2,6 +2,7 @@ import axios from "axios";
 import EventSource from "react-native-sse";
 
 import { TEMPO_API_URL } from "../config/tempoWebConfig";
+import type { AiMessage } from "../../modules/ai/types";
 
 const DEFAULT_TIMEOUT = 30000;
 
@@ -19,6 +20,17 @@ export type ApiError = {
 };
 
 export type SseEvent = { event: string; data: unknown };
+
+export type ChatRequest = {
+  text: string;
+  timezone: string;
+  locale: string;
+  context: {
+    currentTime: string;
+    availableTags: string[];
+  };
+  messages?: AiMessage[];
+};
 
 export async function apiPost<T>(
   path: string,
@@ -39,13 +51,13 @@ export type StreamHandlers = {
 
 export function apiStream(
   path: string,
-  body: unknown,
+  body: ChatRequest,
   handlers: StreamHandlers,
   options?: { timeout?: number },
 ): () => void {
   const url = `${TEMPO_API_URL}${path}`;
 
-  const es = new EventSource<"stage" | "thought" | "command" | "done" | "error">(url, {
+  const es = new EventSource<"stage" | "thought" | "command" | "action" | "final" | "done" | "error">(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -55,7 +67,7 @@ export function apiStream(
     timeout: options?.timeout ?? DEFAULT_TIMEOUT,
   });
 
-  const customEventNames = ["stage", "thought", "command", "done"] as const;
+  const customEventNames = ["stage", "thought", "command", "action", "final", "done"] as const;
 
   for (const name of customEventNames) {
     es.addEventListener(name, (event: any) => {
@@ -71,9 +83,6 @@ export function apiStream(
     });
   }
 
-  // react-native-sse dispatches both server-sent "event: error" and connection
-  // errors through the same "error" listener. We distinguish them at runtime
-  // by checking whether "data" is present (server event) or absent (connection error).
   es.addEventListener("error", (event: any) => {
     if (event.data != null) {
       try {

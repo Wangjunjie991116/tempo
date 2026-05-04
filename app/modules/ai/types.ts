@@ -21,11 +21,23 @@ export type AiCommand = {
   confidence: number;
 };
 
+export type AiMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
+
+export type AiAction = {
+  tool: string;
+  params: Record<string, unknown>;
+};
+
 export type StreamEvent =
   | { event: "stage"; data: AiStageLabel }
   | { event: "thought"; data: { delta: string } }
   | { event: "command"; data: AiCommand }
-  | { event: "done"; data: { traceId: string } }
+  | { event: "action"; data: AiAction }
+  | { event: "final"; data: { command: AiCommand } }
+  | { event: "done"; data: { traceId: string; needsContinuation?: boolean } }
   | { event: "error"; data: { code: number; message: string } };
 
 export type ChatMessage =

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { apiStream, type SseEvent } from "../../../core/api/client";
+import { apiStream, type ChatRequest, type SseEvent } from "../../../core/api/client";
 import { Toast } from "../../../core/ui";
 import {
   addScheduleItem,
@@ -10,8 +10,10 @@ import {
 } from "../../schedule/repo/scheduleStorage";
 import type { ScheduleItem } from "../../schedule/repo/types";
 import type {
+  AiAction,
   AiChatState,
   AiCommand,
+  AiMessage,
   AiStageLabel,
   ChatMessage,
 } from "../types";
@@ -45,14 +47,15 @@ function formatScheduleResult(items: ScheduleItem[]): string {
 
 export function useAiChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [aiMessages, setAiMessages] = useState<AiMessage[]>([]);
   const [state, setState] = useState<AiChatState>("idle");
   const [currentStage, setCurrentStage] = useState<AiStageLabel | null>(null);
   const [pendingCommand, setPendingCommand] = useState<AiCommand | null>(null);
+  const [roundCount, setRoundCount] = useState(0);
   const pendingCommandRef = useRef<AiCommand | null>(null);
   const seqRef = useRef(0);
   const abortRef = useRef<(() => void) | null>(null);
 
-  // Keep ref in sync with state so callbacks always see latest value
   useEffect(() => {
     pendingCommandRef.current = pendingCommand;
   }, [pendingCommand]);
@@ -61,6 +64,7 @@ export function useAiChat() {
     setState("idle");
     setCurrentStage(null);
     setPendingCommand(null);
+    setRoundCount(0);
     if (abortRef.current) {
       abortRef.current();
       abortRef.current = null;
@@ -68,7 +72,7 @@ export function useAiChat() {
   }, []);
 
   const executeCommand = useCallback(
-    async (command: AiCommand, msgId: string): Promise<string> => {
+    async (command: AiCommand, _msgId: string): Promise<string> => {
       try {
         switch (command.action) {
           case "create_schedule": {
@@ -99,7 +103,22 @@ export function useAiChat() {
           }
           case "update_schedule": {
             const params = command.params;
-            const id = params.id as string;
+            let id = params.id as string | undefined;
+            if (!id && params.query_hint) {
+              const matches = await findScheduleItems({
+                keyword: params.query_hint as string,
+              });
+              if (matches.length === 0) {
+                return `更新失败：未找到与 "${params.query_hint}" 匹配的日程。`;
+              }
+              if (matches.length > 1) {
+                return `找到多个匹配日程，请提供更精确的描述：\n${formatScheduleResult(matches)}`;
+              }
+              id = matches[0].id;
+            }
+            if (!id) {
+              return "更新失败：缺少日程 ID 或定位描述。";
+            }
             const patch: Partial<Omit<ScheduleItem, "id">> = {};
             if (params.title) patch.title = params.title as string;
             if (params.start_at)
@@ -116,7 +135,23 @@ export function useAiChat() {
               : `更新失败：找不到 ID 为 ${id} 的日程。`;
           }
           case "delete_schedule": {
-            const id = command.params.id as string;
+            const params = command.params;
+            let id = params.id as string | undefined;
+            if (!id && params.query_hint) {
+              const matches = await findScheduleItems({
+                keyword: params.query_hint as string,
+              });
+              if (matches.length === 0) {
+                return `删除失败：未找到与 "${params.query_hint}" 匹配的日程。`;
+              }
+              if (matches.length > 1) {
+                return `找到多个匹配日程，请提供更精确的描述：\n${formatScheduleResult(matches)}`;
+              }
+              id = matches[0].id;
+            }
+            if (!id) {
+              return "删除失败：缺少日程 ID 或定位描述。";
+            }
             const ok = await deleteScheduleItem(id);
             return ok
               ? `已删除日程。`
@@ -150,10 +185,106 @@ export function useAiChat() {
     [],
   );
 
-  const sendMessage = useCallback(
-    async (text: string) => {
-      if (!text.trim() || state === "sending" || state === "streaming" || state === "executing") return;
+  async function executeAction(action: AiAction): Promise<string> {
+    const { tool, params } = action;
+    switch (tool) {
+      case "query_schedule": {
+        const items = await findScheduleItems({
+          keyword: params.keyword as string | undefined,
+          startAt: params.start_date
+            ? Date.parse(params.start_date as string)
+            : undefined,
+          endAt: params.end_date
+            ? Date.parse(params.end_date as string)
+            : undefined,
+        });
+        return formatScheduleResult(items);
+      }
+      case "create_schedule": {
+        const startAt = params.start_at
+          ? Date.parse(params.start_at as string)
+          : Date.now();
+        const endAt = params.end_at
+          ? Date.parse(params.end_at as string)
+          : startAt + 3600000;
+        const tag = (params.tag as ScheduleItem["tag"]) ?? "workshop";
+        if (tag !== "design_review" && tag !== "workshop" && tag !== "brainstorm") {
+          return `创建失败：不支持的标签类型 "${tag}"。`;
+        }
+        await addScheduleItem({
+          title: (params.title as string) ?? "未命名日程",
+          tag,
+          startAt,
+          endAt: params.all_day ? startAt + 86399000 : endAt,
+          status: "upcoming",
+          attendeeCount: (params.attendee_count as number) ?? 1,
+        });
+        return `已创建日程：${params.title ?? "未命名日程"}`;
+      }
+      case "update_schedule": {
+        let id = params.id as string | undefined;
+        if (!id && params.query_hint) {
+          const matches = await findScheduleItems({
+            keyword: params.query_hint as string,
+          });
+          if (matches.length === 0) {
+            return `更新失败：未找到与 "${params.query_hint}" 匹配的日程。`;
+          }
+          if (matches.length > 1) {
+            return `找到多个匹配日程，请提供更精确的描述：\n${formatScheduleResult(matches)}`;
+          }
+          id = matches[0].id;
+        }
+        if (!id) {
+          return "更新失败：缺少日程 ID 或定位描述。";
+        }
+        const patch: Partial<Omit<ScheduleItem, "id">> = {};
+        if (params.title) patch.title = params.title as string;
+        if (params.start_at) patch.startAt = Date.parse(params.start_at as string);
+        if (params.end_at) patch.endAt = Date.parse(params.end_at as string);
+        if (params.tag) patch.tag = params.tag as ScheduleItem["tag"];
+        if (params.status) patch.status = params.status as ScheduleItem["status"];
+        if (typeof params.attendee_count === "number") patch.attendeeCount = params.attendee_count;
+        const updated = await updateScheduleItem(id, patch);
+        return updated
+          ? `已更新日程：${updated.title}`
+          : `更新失败：找不到 ID 为 ${id} 的日程。`;
+      }
+      case "delete_schedule": {
+        let id = params.id as string | undefined;
+        if (!id && params.query_hint) {
+          const matches = await findScheduleItems({
+            keyword: params.query_hint as string,
+          });
+          if (matches.length === 0) {
+            return `删除失败：未找到与 "${params.query_hint}" 匹配的日程。`;
+          }
+          if (matches.length > 1) {
+            return `找到多个匹配日程，请提供更精确的描述：\n${formatScheduleResult(matches)}`;
+          }
+          id = matches[0].id;
+        }
+        if (!id) {
+          return "删除失败：缺少日程 ID 或定位描述。";
+        }
+        const ok = await deleteScheduleItem(id);
+        return ok
+          ? `已删除日程。`
+          : `删除失败：找不到 ID 为 ${id} 的日程。`;
+      }
+      default:
+        return `未知工具：${tool}`;
+    }
+  }
 
+  async function processRound(
+    text: string,
+    currentAiMessages: AiMessage[],
+    assistantMsgId: string,
+    currentRound: number,
+    isContinuation: boolean,
+  ) {
+    if (!isContinuation) {
       resetState();
       const userMsg: ChatMessage = {
         id: nextId("u", seqRef),
@@ -162,9 +293,8 @@ export function useAiChat() {
         text: text.trim(),
       };
       setMessages((prev) => [...prev, userMsg]);
-      setState("sending");
+      setAiMessages(currentAiMessages);
 
-      const assistantMsgId = nextId("a", seqRef);
       const assistantMsg: ChatMessage = {
         id: assistantMsgId,
         role: "assistant",
@@ -173,168 +303,215 @@ export function useAiChat() {
         thoughts: "",
       };
       setMessages((prev) => [...prev, assistantMsg]);
+    }
 
-      try {
-        let collectedCommand: AiCommand | null = null;
-        let hasStartedStreaming = false;
+    setState("sending");
+    setRoundCount(currentRound);
 
-        console.log("[useAiChat] sending request:", text.trim());
+    try {
+      let collectedAction: AiAction | null = null;
+      let collectedCommand: AiCommand | null = null;
+      let hasStartedStreaming = false;
 
-        await new Promise<void>((resolve, reject) => {
-          abortRef.current = apiStream(
-            "/api/v1/ai/chat",
-            {
-              text: text.trim(),
-              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-              locale: Intl.DateTimeFormat().resolvedOptions().locale,
-              context: {
-                currentTime: new Date().toISOString(),
-                availableTags: ["design_review", "workshop", "brainstorm"],
-              },
+      console.log("[useAiChat] sending request:", text.trim(), "round:", currentRound);
+
+      await new Promise<void>((resolve, reject) => {
+        abortRef.current = apiStream(
+          "/api/v1/ai/chat",
+          {
+            text: text.trim(),
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            locale: Intl.DateTimeFormat().resolvedOptions().locale,
+            context: {
+              currentTime: new Date().toISOString(),
+              availableTags: ["design_review", "workshop", "brainstorm"],
             },
-            {
-              onEvent: (ev: SseEvent) => {
-                if (!hasStartedStreaming) {
-                  hasStartedStreaming = true;
-                  setState("streaming");
-                }
-                console.log("[useAiChat] sse event:", ev.event, ev.data);
-                if (ev.event === "stage") {
-                  const stageData = ev.data as AiStageLabel;
-                  setCurrentStage(stageData);
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMsgId && m.type === "thinking"
-                        ? { ...m, stages: [...m.stages, stageData] }
-                        : m,
-                    ),
-                  );
-                } else if (ev.event === "thought") {
-                  const delta = (ev.data as { delta: string }).delta;
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMsgId && m.type === "thinking"
-                        ? { ...m, thoughts: m.thoughts + delta }
-                        : m,
-                    ),
-                  );
-                } else if (ev.event === "command") {
-                  const cmd = ev.data as AiCommand;
-                  collectedCommand = cmd;
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMsgId && m.type === "thinking"
-                        ? { ...m, command: cmd }
-                        : m,
-                    ),
-                  );
-                } else if (ev.event === "error") {
-                  const errData = ev.data as { code: number; message: string };
-                  reject(new Error(errData.message));
-                }
-              },
-              onError: (err) => reject(err),
-              onDone: () => resolve(),
+            messages: currentAiMessages,
+          } as ChatRequest,
+          {
+            onEvent: (ev: SseEvent) => {
+              if (!hasStartedStreaming) {
+                hasStartedStreaming = true;
+                setState("streaming");
+              }
+              console.log("[useAiChat] sse event:", ev.event, ev.data);
+              if (ev.event === "stage") {
+                const stageData = ev.data as AiStageLabel;
+                setCurrentStage(stageData);
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMsgId && m.type === "thinking"
+                      ? { ...m, stages: [...m.stages, stageData] }
+                      : m,
+                  ),
+                );
+              } else if (ev.event === "thought") {
+                const delta = (ev.data as { delta: string }).delta;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMsgId && m.type === "thinking"
+                      ? { ...m, thoughts: m.thoughts + delta }
+                      : m,
+                  ),
+                );
+              } else if (ev.event === "action") {
+                collectedAction = ev.data as AiAction;
+              } else if (ev.event === "final") {
+                const cmd = (ev.data as { command: AiCommand }).command;
+                collectedCommand = cmd;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMsgId && m.type === "thinking"
+                      ? { ...m, command: cmd }
+                      : m,
+                  ),
+                );
+              } else if (ev.event === "command") {
+                const cmd = ev.data as AiCommand;
+                collectedCommand = cmd;
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantMsgId && m.type === "thinking"
+                      ? { ...m, command: cmd }
+                      : m,
+                  ),
+                );
+              } else if (ev.event === "error") {
+                const errData = ev.data as { code: number; message: string };
+                reject(new Error(errData.message));
+              }
             },
-          );
-        });
+            onError: (err) => reject(err),
+            onDone: () => resolve(),
+          },
+        );
+      });
 
-        // After stream ends, decide what to do
-        if (collectedCommand) {
-          const cmd = collectedCommand as AiCommand;
+      if (collectedAction) {
+        const action = collectedAction;
 
-          // Low confidence: ask user
-          if (cmd.confidence < 0.7) {
-            setPendingCommand(cmd);
-            setState("confirming");
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantMsgId
-                  ? {
-                      id: assistantMsgId,
-                      role: "assistant",
-                      type: "command",
-                      command: cmd,
-                      confirmed: false,
-                    }
-                  : m,
-              ),
-            );
-            return;
-          }
-
-          // Create action always requires confirmation
-          if (cmd.action === "create_schedule") {
-            setPendingCommand(cmd);
-            setState("confirming");
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantMsgId
-                  ? {
-                      id: assistantMsgId,
-                      role: "assistant",
-                      type: "command",
-                      command: cmd,
-                      confirmed: false,
-                    }
-                  : m,
-              ),
-            );
-            return;
-          }
-
-          // Other actions execute directly
-          setState("executing");
-          const resultText = await executeCommand(cmd, assistantMsgId);
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantMsgId
-                ? {
-                    id: assistantMsgId,
-                    role: "assistant",
-                    type: "text",
-                    text: resultText,
-                  }
-                : m,
-            ),
-          );
-          setState("done");
-        } else {
-          // No command received
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantMsgId
-                ? {
-                    id: assistantMsgId,
-                    role: "assistant",
-                    type: "text",
-                    text: "抱歉，我没有理解你的请求。",
-                  }
-                : m,
-            ),
-          );
-          setState("done");
+        if (currentRound >= 2) {
+          Toast.show({ type: "error", text1: "操作过于复杂，请分步说明" });
+          setState("error");
+          return;
         }
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "网络异常，请稍后重试";
-        Toast.show({ type: "error", text1: message });
+
+        const observation = await executeAction(action);
+
+        const assistantContent = `Thought: 执行工具 ${action.tool}\nAction: ${action.tool}\nAction Input: ${JSON.stringify(action.params)}\nObservation: ${observation}`;
+        const newMessages: AiMessage[] = [
+          ...currentAiMessages,
+          { role: "assistant", content: assistantContent },
+          { role: "user", content: `Observation: ${observation}` },
+        ];
+
+        await processRound(text, newMessages, assistantMsgId, currentRound + 1, true);
+        return;
+      }
+
+      if (collectedCommand) {
+        const cmd = collectedCommand;
+
+        if (cmd.confidence < 0.7) {
+          setPendingCommand(cmd);
+          setState("confirming");
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantMsgId
+                ? {
+                    id: assistantMsgId,
+                    role: "assistant",
+                    type: "command",
+                    command: cmd,
+                    confirmed: false,
+                  }
+                : m,
+            ),
+          );
+          return;
+        }
+
+        if (cmd.action === "create_schedule") {
+          setPendingCommand(cmd);
+          setState("confirming");
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantMsgId
+                ? {
+                    id: assistantMsgId,
+                    role: "assistant",
+                    type: "command",
+                    command: cmd,
+                    confirmed: false,
+                  }
+                : m,
+            ),
+          );
+          return;
+        }
+
+        setState("executing");
+        const resultText = await executeCommand(cmd, assistantMsgId);
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantMsgId
               ? {
                   id: assistantMsgId,
                   role: "assistant",
-                  type: "error",
-                  text: message,
+                  type: "text",
+                  text: resultText,
                 }
               : m,
           ),
         );
-        setState("error");
+        setState("done");
+      } else {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId
+              ? {
+                  id: assistantMsgId,
+                  role: "assistant",
+                  type: "text",
+                  text: "抱歉，我没有理解你的请求。",
+                }
+              : m,
+          ),
+        );
+        setState("done");
       }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "网络异常，请稍后重试";
+      Toast.show({ type: "error", text1: message });
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantMsgId
+            ? {
+                id: assistantMsgId,
+                role: "assistant",
+                type: "error",
+                text: message,
+              }
+            : m,
+        ),
+      );
+      setState("error");
+    }
+  }
+
+  const sendMessage = useCallback(
+    async (text: string) => {
+      if (!text.trim() || state === "sending" || state === "streaming" || state === "executing") return;
+
+      const assistantMsgId = nextId("a", seqRef);
+      const initialMessages: AiMessage[] = [
+        { role: "user", content: text.trim() },
+      ];
+
+      await processRound(text.trim(), initialMessages, assistantMsgId, 0, false);
     },
-    [state, resetState, executeCommand],
+    [state, resetState],
   );
 
   const confirmCommand = useCallback(async () => {
@@ -381,6 +558,7 @@ export function useAiChat() {
 
   const clearMessages = useCallback(() => {
     setMessages([]);
+    setAiMessages([]);
     resetState();
   }, [resetState]);
 

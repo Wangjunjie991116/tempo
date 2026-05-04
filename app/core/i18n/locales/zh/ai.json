@@ -8,5 +8,7 @@
   "holdToSpeak": "按住说话",
   "holdListening": "正在聆听…",
   "speechUnavailable": "语音识别暂不可用，请检查麦克风与系统权限或稍后再试。",
-  "speechErrorWithDetail": "语音识别出现问题：{{detail}}"
+  "speechErrorWithDetail": "语音识别出现问题：{{detail}}",
+  "speechTooShort": "说话时间太短了，请长按麦克风多试一会儿",
+  "speechNoInput": "没听清，请靠近麦克风再说一遍"
 }

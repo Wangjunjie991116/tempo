@@ -8,5 +8,7 @@
   "holdToSpeak": "Hold to speak",
   "holdListening": "Listening…",
   "speechUnavailable": "Speech recognition is unavailable. Check the mic and permissions.",
-  "speechErrorWithDetail": "Speech recognition failed: {{detail}}"
+  "speechErrorWithDetail": "Speech recognition failed: {{detail}}",
+  "speechTooShort": "Too short. Hold the microphone a bit longer.",
+  "speechNoInput": "Didn't catch that. Please speak closer to the mic and try again."
 }

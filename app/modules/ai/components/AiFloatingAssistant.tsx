@@ -27,6 +27,7 @@ import Svg, {
 
 import { useTranslation } from "../../../core/i18n";
 import { useTempoTheme } from "../../../core/theme";
+import { Toast, ToastRenderer } from "../../../core/ui";
 
 const BAR_COUNT = 21;
 
@@ -79,13 +80,41 @@ function AiRobotOrbGraphic({ size }: { size: number }) {
       <Circle cx={54} cy={18} r={3.2} fill={glow} opacity={0.85} />
       <Circle cx={14} cy={22} r={2.2} fill={glow} opacity={0.35} />
 
-      <Circle cx={32} cy={32} r={31} stroke="url(#ai-halo)" strokeWidth={3} fill="none" opacity={1} />
+      <Circle
+        cx={32}
+        cy={32}
+        r={31}
+        stroke="url(#ai-halo)"
+        strokeWidth={3}
+        fill="none"
+        opacity={1}
+      />
 
-      <Path d="M32 15v11" stroke="url(#ai-accent)" strokeWidth={3} strokeLinecap="round" />
+      <Path
+        d="M32 15v11"
+        stroke="url(#ai-accent)"
+        strokeWidth={3}
+        strokeLinecap="round"
+      />
       <Circle cx={32} cy={12} r={5} fill="url(#ai-accent)" opacity={1} />
 
-      <Circle cx={32} cy={36} r={22} fill="url(#ai-bod)" stroke={glow} strokeWidth={2.2} />
-      <Circle cx={32} cy={36} r={26} stroke={glow} strokeWidth={1} opacity={0.25} fill="none" />
+      <Circle
+        cx={32}
+        cy={36}
+        r={22}
+        fill="url(#ai-bod)"
+        stroke={glow}
+        strokeWidth={2.2}
+      />
+      <Circle
+        cx={32}
+        cy={36}
+        r={26}
+        stroke={glow}
+        strokeWidth={1}
+        opacity={0.25}
+        fill="none"
+      />
 
       <Ellipse cx={25} cy={34} rx={5} ry={5.8} fill="#fff" opacity={0.95} />
       <Ellipse cx={39} cy={34} rx={5} ry={5.8} fill="#fff" opacity={0.95} />
@@ -106,8 +135,22 @@ function AiRobotOrbGraphic({ size }: { size: number }) {
       </G>
       <Ellipse cx={32} cy={44} rx={16} ry={8} fill="#ffffff" opacity={0.06} />
 
-      <Ellipse cx={32} cy={56} rx={17} ry={5} stroke={brand} strokeWidth={1.8} opacity={0.85} />
-      <Path d="M20 54h24" stroke="#fff" strokeWidth={3} opacity={0.15} strokeLinecap="round" />
+      <Ellipse
+        cx={32}
+        cy={56}
+        rx={17}
+        ry={5}
+        stroke={brand}
+        strokeWidth={1.8}
+        opacity={0.85}
+      />
+      <Path
+        d="M20 54h24"
+        stroke="#fff"
+        strokeWidth={3}
+        opacity={0.15}
+        strokeLinecap="round"
+      />
     </Svg>
   );
 }
@@ -140,6 +183,9 @@ export function AiFloatingAssistant() {
     msgIdSeq.current += 1;
     return `${prefix}-${Date.now()}-${msgIdSeq.current}`;
   }, []);
+
+  const holdStartTimeRef = useRef(0);
+  const isShortSilentTapRef = useRef(false);
 
   const tabBarBump = Platform.OS === "ios" ? 52 : 58;
   const fabBottom = Math.max(insets.bottom, 10) + tabBarBump + t.space.sm;
@@ -231,32 +277,26 @@ export function AiFloatingAssistant() {
 
     Voice.onSpeechResults = (e) => {
       const phrase = e.value?.[0];
-      if (phrase && phrase.trim().length > 0) transcriptRef.current = phrase.trim();
+      if (phrase && phrase.trim().length > 0)
+        transcriptRef.current = phrase.trim();
     };
     Voice.onSpeechPartialResults = (e) => {
       const phrase = e.value?.[0];
-      if (phrase && phrase.trim().length > 0) transcriptRef.current = phrase.trim();
+      if (phrase && phrase.trim().length > 0)
+        transcriptRef.current = phrase.trim();
     };
     Voice.onSpeechVolumeChanged = (e) => {
       volumeNormRef.current = normalizeSpeechVolume(e.value);
       flushVolumeUi();
     };
     Voice.onSpeechError = (e) => {
-      const msg = e.error?.message ?? "";
+      const elapsed = Date.now() - holdStartTimeRef.current;
+      if (isShortSilentTapRef.current || elapsed < 1000) {
+        return;
+      }
+      // 长按后的语音引擎错误由 finalizeUtterance 统一收口，避免和 info Toast 竞态
       transcriptRef.current = "";
-      const trCb = trRef.current;
-      if (__DEV__)
-        console.warn("[ai-voice]", e.error?.code, msg);
-      setMessages((cur) => [
-        ...cur,
-        {
-          id: nextMsgId("sys"),
-          role: "assistant",
-          text: msg
-            ? trCb("ai:speechErrorWithDetail", { detail: msg })
-            : trCb("ai:speechUnavailable"),
-        },
-      ]);
+      if (__DEV__) console.warn("[ai-voice] engine error", e.error?.code, e.error?.message);
     };
 
     return () => {
@@ -292,9 +332,24 @@ export function AiFloatingAssistant() {
     await Voice.stop().catch(() => undefined);
 
     const text = transcriptRef.current.trim();
+    const duration = Date.now() - holdStartTimeRef.current;
     transcriptRef.current = "";
 
-    if (!text) return;
+    if (!text) {
+      if (duration < 1000) {
+        isShortSilentTapRef.current = true;
+        Toast.show({
+          type: "info",
+          text1: tr("ai:speechTooShort"),
+        });
+      } else {
+        Toast.show({
+          type: "info",
+          text1: tr("ai:speechNoInput"),
+        });
+      }
+      return;
+    }
 
     const userBubble: ChatBubble = {
       id: nextMsgId("u"),
@@ -315,20 +370,18 @@ export function AiFloatingAssistant() {
     volumeNormRef.current = 0.12;
     setLiveVol(0.12);
     setHolding(true);
+    holdStartTimeRef.current = Date.now();
+    isShortSilentTapRef.current = false;
 
     try {
       await Voice.cancel().catch(() => undefined);
       await Voice.start(pickVoiceLocale());
     } catch {
       setHolding(false);
-      setMessages((cur) => [
-        ...cur,
-        {
-          id: nextMsgId("err"),
-          role: "assistant",
-          text: tr("ai:speechUnavailable"),
-        },
-      ]);
+      Toast.show({
+        type: "error",
+        text1: tr("ai:speechUnavailable"),
+      });
     }
   }, [appendAssistantIntro, tr]);
 
@@ -386,12 +439,20 @@ export function AiFloatingAssistant() {
         onRequestClose={() => setOpen(false)}
       >
         <View style={styles.modalRoot}>
+          <ToastRenderer />
           {Platform.OS === "ios" ? (
-            <BlurView intensity={28} tint="dark" style={StyleSheet.absoluteFill} />
+            <BlurView
+              intensity={28}
+              tint="dark"
+              style={StyleSheet.absoluteFill}
+            />
           ) : (
             <View style={[StyleSheet.absoluteFill, styles.androidDim]} />
           )}
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setOpen(false)}
+          />
 
           <View
             style={[
@@ -405,7 +466,9 @@ export function AiFloatingAssistant() {
               },
             ]}
           >
-            <View style={[styles.sheetHandle, { backgroundColor: palette.line }]} />
+            <View
+              style={[styles.sheetHandle, { backgroundColor: palette.line }]}
+            />
             <Text style={[styles.sheetTitle, { color: t.textPrimary }]}>
               {tr("ai:panelTitle")}
             </Text>
@@ -424,7 +487,9 @@ export function AiFloatingAssistant() {
                   key={m.id}
                   style={[
                     styles.bubbleRow,
-                    m.role === "user" ? styles.bubbleRowUser : styles.bubbleRowAssistant,
+                    m.role === "user"
+                      ? styles.bubbleRowUser
+                      : styles.bubbleRowAssistant,
                   ]}
                 >
                   <View
@@ -438,7 +503,12 @@ export function AiFloatingAssistant() {
                     <Text
                       style={[
                         styles.bubbleText,
-                        { color: m.role === "user" ? t.surfaceElevated : t.textPrimary },
+                        {
+                          color:
+                            m.role === "user"
+                              ? t.surfaceElevated
+                              : t.textPrimary,
+                        },
                       ]}
                     >
                       {m.text}
@@ -482,7 +552,9 @@ export function AiFloatingAssistant() {
                   styles.micOuter,
                   {
                     borderColor: holding ? t.brand : palette.line,
-                    backgroundColor: holding ? t.brandSelectedHighlight : t.surfaceElevated,
+                    backgroundColor: holding
+                      ? t.brandSelectedHighlight
+                      : t.surfaceElevated,
                     transform: [{ scale: pressed || holding ? 1.04 : 1 }],
                   },
                 ]}

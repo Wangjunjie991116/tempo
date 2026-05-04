@@ -19,6 +19,7 @@ import {
   tempoLinking,
 } from "./core/navigation";
 import { SessionProvider } from "./core/session";
+import { ToastProvider } from "./core/ui";
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
@@ -46,13 +47,15 @@ export default function App() {
   return (
     <TempoThemeProvider>
       <SafeAreaProvider>
-        <SessionProvider>
-          <NavigationContainer ref={navigationRef} linking={tempoLinking}>
-            <StatusBar style="dark" />
-            <RootNavigator />
-            <AuthNavigationSync />
-          </NavigationContainer>
-        </SessionProvider>
+        <ToastProvider>
+          <SessionProvider>
+            <NavigationContainer ref={navigationRef} linking={tempoLinking}>
+              <StatusBar style="dark" />
+              <RootNavigator />
+              <AuthNavigationSync />
+            </NavigationContainer>
+          </SessionProvider>
+        </ToastProvider>
       </SafeAreaProvider>
     </TempoThemeProvider>
   );

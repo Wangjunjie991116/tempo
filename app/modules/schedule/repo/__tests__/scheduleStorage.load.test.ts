@@ -18,14 +18,12 @@ jest.mock("@react-native-async-storage/async-storage", () => ({
   },
 }));
 
-import { DEFAULT_SCHEDULE_ITEMS } from "../seed";
-
 function requireStorage(): typeof import("../scheduleStorage") {
   // eslint-disable-next-line @typescript-eslint/no-require-imports -- resetModules 后需同步重新加载模块
   return require("../scheduleStorage");
 }
 
-describe("scheduleStorage load + startup overwrite", () => {
+describe("scheduleStorage load", () => {
   beforeEach(() => {
     jest.resetModules();
     Object.keys(memory).forEach((k) => {
@@ -33,43 +31,66 @@ describe("scheduleStorage load + startup overwrite", () => {
     });
   });
 
-  it("on first load writes DEFAULT_SCHEDULE_ITEMS even when key missing", async () => {
-    const { loadScheduleItems, SCHEDULE_STORAGE_KEY } = requireStorage();
-    const items = await loadScheduleItems();
-    expect(items).toHaveLength(DEFAULT_SCHEDULE_ITEMS.length);
-    expect(JSON.parse(memory[SCHEDULE_STORAGE_KEY])).toHaveLength(DEFAULT_SCHEDULE_ITEMS.length);
-  });
-
-  it("on first load overwrites existing stored payload with defaults", async () => {
-    const { loadScheduleItems, SCHEDULE_STORAGE_KEY } = requireStorage();
-    memory[SCHEDULE_STORAGE_KEY] = JSON.stringify([DEFAULT_SCHEDULE_ITEMS[0]]);
-    const items = await loadScheduleItems();
-    expect(items).toHaveLength(DEFAULT_SCHEDULE_ITEMS.length);
-    expect(JSON.parse(memory[SCHEDULE_STORAGE_KEY])).toHaveLength(DEFAULT_SCHEDULE_ITEMS.length);
-  });
-
-  it("removes legacy v3 key on first load", async () => {
+  it("returns empty array when key is missing", async () => {
     const { loadScheduleItems } = requireStorage();
-    const legacyKey = "tempo.schedule.v3";
-    memory[legacyKey] = JSON.stringify([DEFAULT_SCHEDULE_ITEMS[0]]);
-    await loadScheduleItems();
-    expect(memory[legacyKey]).toBeUndefined();
+    const items = await loadScheduleItems();
+    expect(items).toHaveLength(0);
+  });
+
+  it("reads existing stored payload", async () => {
+    const { loadScheduleItems, SCHEDULE_STORAGE_KEY } = requireStorage();
+    const stored = [
+      {
+        id: "1",
+        title: "Existing Meeting",
+        tag: "workshop",
+        startAt: Date.parse("2026-05-04T09:00:00.000Z"),
+        endAt: Date.parse("2026-05-04T10:00:00.000Z"),
+        status: "upcoming",
+        attendeeCount: 3,
+      },
+    ];
+    memory[SCHEDULE_STORAGE_KEY] = JSON.stringify(stored);
+    const items = await loadScheduleItems();
+    expect(items).toHaveLength(1);
+    expect(items[0].title).toBe("Existing Meeting");
   });
 
   it("second load in same process reads storage (e.g. after saveScheduleItems)", async () => {
     const { loadScheduleItems, saveScheduleItems } = requireStorage();
-    await loadScheduleItems();
-    await saveScheduleItems([DEFAULT_SCHEDULE_ITEMS[0]]);
+    await saveScheduleItems([
+      {
+        id: "1",
+        title: "Saved Item",
+        tag: "brainstorm",
+        startAt: Date.now(),
+        endAt: 0,
+        status: "upcoming",
+        attendeeCount: 1,
+      },
+    ]);
     const second = await loadScheduleItems();
     expect(second).toHaveLength(1);
+    expect(second[0].title).toBe("Saved Item");
   });
 
-  it("concurrent first loads share one promise and yield defaults", async () => {
-    const { loadScheduleItems, SCHEDULE_STORAGE_KEY } = requireStorage();
+  it("concurrent loads share one promise", async () => {
+    const { loadScheduleItems, saveScheduleItems } = requireStorage();
+    await saveScheduleItems([
+      {
+        id: "1",
+        title: "Concurrent",
+        tag: "design_review",
+        startAt: Date.now(),
+        endAt: 0,
+        status: "upcoming",
+        attendeeCount: 2,
+      },
+    ]);
     const [a, b] = await Promise.all([loadScheduleItems(), loadScheduleItems()]);
-    expect(a.length).toBe(DEFAULT_SCHEDULE_ITEMS.length);
-    expect(b.length).toBe(DEFAULT_SCHEDULE_ITEMS.length);
-    expect(JSON.parse(memory[SCHEDULE_STORAGE_KEY])).toHaveLength(DEFAULT_SCHEDULE_ITEMS.length);
+    expect(a.length).toBe(1);
+    expect(b.length).toBe(1);
+    expect(a[0].title).toBe("Concurrent");
   });
 
   it("saveScheduleItems uses canonical key", async () => {

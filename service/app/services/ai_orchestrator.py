@@ -128,14 +128,22 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
     raw_buffer = ""
     chunk_count = 0
 
-    async for chunk in stream:
-        chunk_count += 1
-        delta = chunk.choices[0].delta
+    try:
+        async for chunk in stream:
+            chunk_count += 1
+            if not chunk.choices or len(chunk.choices) == 0:
+                continue
+            delta = chunk.choices[0].delta
+            if delta is None or delta.content is None:
+                continue
 
-        if delta.content:
             raw_buffer += delta.content
             _log("chunk_content", delta.content[:200])
             yield _sse_event("thought", {"delta": delta.content})
+    except Exception as e:
+        _log("stream_error", str(e))
+        yield _sse_event("error", {"code": 10004, "message": f"流式传输中断: {str(e)}"})
+        return
 
     _log("stream_end", {"total_chunks": chunk_count, "raw_buffer_length": len(raw_buffer)})
 

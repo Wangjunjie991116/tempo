@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { createScheduleRepository } from "../repo/ScheduleRepository";
+import { subscribeScheduleChanges } from "../repo/scheduleStorage";
 import type { ScheduleItem } from "../repo/types";
 
 /**
- * 挂载时 **一次性** 加载并持有全量日程（适合横向按日分页：内存分区，避免每页两次 IO）。
+ * 加载并持有全量日程（适合横向按日分页：内存分区，避免每页两次 IO）。
+ * 当本地日程数据被 AI 助手或其它模块修改时自动刷新。
  *
  * @returns `{ items, loading, refresh }` — `refresh()` 可手动触发重新 `getAll()`
  *
@@ -31,6 +33,12 @@ export function useScheduleAllItems() {
 
   useEffect(() => {
     void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    return subscribeScheduleChanges(() => {
+      void refresh();
+    });
   }, [refresh]);
 
   return { items, loading, refresh };

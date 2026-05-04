@@ -32,11 +32,17 @@ class AiChatContext(BaseModel):
     availableTags: Optional[list[str]] = None
 
 
+class AiMessage(BaseModel):
+    role: str = Field(..., description="One of: system, user, assistant")
+    content: str
+
+
 class AiChatRequest(BaseModel):
     text: str = Field(..., min_length=1)
     timezone: Optional[str] = None
     locale: Optional[str] = None
     context: Optional[dict[str, Any]] = None
+    messages: Optional[list[AiMessage]] = None
 
 
 class AiCommand(BaseModel):

@@ -135,6 +135,11 @@ export function AiFloatingAssistant() {
   const chatScrollRef = useRef<ScrollView | null>(null);
   const trRef = useRef(tr);
   trRef.current = tr;
+  const msgIdSeq = useRef(0);
+  const nextMsgId = useCallback((prefix: string) => {
+    msgIdSeq.current += 1;
+    return `${prefix}-${Date.now()}-${msgIdSeq.current}`;
+  }, []);
 
   const tabBarBump = Platform.OS === "ios" ? 52 : 58;
   const fabBottom = Math.max(insets.bottom, 10) + tabBarBump + t.space.sm;
@@ -245,7 +250,7 @@ export function AiFloatingAssistant() {
       setMessages((cur) => [
         ...cur,
         {
-          id: `sys-${Date.now()}`,
+          id: nextMsgId("sys"),
           role: "assistant",
           text: msg
             ? trCb("ai:speechErrorWithDetail", { detail: msg })
@@ -292,12 +297,12 @@ export function AiFloatingAssistant() {
     if (!text) return;
 
     const userBubble: ChatBubble = {
-      id: `u-${Date.now()}`,
+      id: nextMsgId("u"),
       role: "user",
       text,
     };
     const ack: ChatBubble = {
-      id: `a-${Date.now() + 1}`,
+      id: nextMsgId("a"),
       role: "assistant",
       text: tr("ai:assistantAck"),
     };
@@ -319,7 +324,7 @@ export function AiFloatingAssistant() {
       setMessages((cur) => [
         ...cur,
         {
-          id: `err-${Date.now()}`,
+          id: nextMsgId("err"),
           role: "assistant",
           text: tr("ai:speechUnavailable"),
         },

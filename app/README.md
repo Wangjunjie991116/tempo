@@ -121,7 +121,7 @@ app/
 
 - `pnpm start` — 启动 Expo Dev Tools
 - `pnpm run ios`、`pnpm run android`、`pnpm run web`
-- **`pnpm run prebuild`** → **`pnpm run ios:run` / `android:run`** — 如需本机构建含 `@react-native-voice/voice` 的原生客户端（详见下节）；日常仅改 JS 可继续配合 `pnpm start`
+- **`pnpm run prebuild`** → **`pnpm run ios` / `android`** — 如需本机构建含 `@react-native-voice/voice` 的原生客户端（详见下节）；日常仅改 JS 可继续配合 `pnpm start`
 - `pnpm test` — 运行 Jest（日程仓储相关）
 
 依赖版本请优先使用 **`pnpm exec expo install <包名>`**，与 Expo SDK 对齐。
@@ -130,4 +130,4 @@ app/
 
 ## 语音识别与原生客户端
 
-悬浮助手依赖 **`@react-native-voice/voice`**。**标准 Expo Go 不包含该原生模块**；要使用语音能力，需在 **`app/`** 执行 `pnpm run prebuild` 后用 `pnpm run ios:run` 或 `pnpm run android:run`（或 Xcode / Android Studio 打开生成的工程）。本机 CocoaPods / 证书环境问题需自行在当前开发环境排解。
+悬浮助手依赖 **`@react-native-voice/voice`**。**标准 Expo Go 不包含该原生模块**；要使用语音能力，需在 **`app/`** 执行 `pnpm run prebuild` 后用 `pnpm run ios` 或 `pnpm run android`（或 Xcode / Android Studio 打开生成的工程）。本机 CocoaPods / 证书环境问题需自行在当前开发环境排解。

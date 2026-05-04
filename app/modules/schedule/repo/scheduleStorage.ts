@@ -195,3 +195,96 @@ export async function loadScheduleItems(): Promise<ScheduleItem[]> {
 export async function saveScheduleItems(items: ScheduleItem[]): Promise<void> {
   await AsyncStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(items));
 }
+
+/**
+ * 追加一条新日程到本地存储。
+ *
+ * @example
+ * ```ts
+ * const newItem = await addScheduleItem({
+ *   title: "New Meeting",
+ *   tag: "workshop",
+ *   startAt: Date.now(),
+ *   endAt: Date.now() + 3600000,
+ *   status: "upcoming",
+ *   attendeeCount: 3,
+ * });
+ * ```
+ */
+export async function addScheduleItem(
+  item: Omit<ScheduleItem, "id">,
+): Promise<ScheduleItem> {
+  const items = await loadScheduleItems();
+  const newItem: ScheduleItem = {
+    ...item,
+    id: `sched-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  };
+  items.push(newItem);
+  await saveScheduleItems(items);
+  return newItem;
+}
+
+/**
+ * 根据 ID 更新单条日程；找不到时返回 null。
+ *
+ * @example
+ * ```ts
+ * await updateScheduleItem("1", { title: "Updated Title", attendeeCount: 5 });
+ * ```
+ */
+export async function updateScheduleItem(
+  id: string,
+  patch: Partial<Omit<ScheduleItem, "id">>,
+): Promise<ScheduleItem | null> {
+  const items = await loadScheduleItems();
+  const index = items.findIndex((i) => i.id === id);
+  if (index === -1) return null;
+  items[index] = { ...items[index], ...patch };
+  await saveScheduleItems(items);
+  return items[index];
+}
+
+/**
+ * 根据 ID 删除单条日程；返回是否成功删除。
+ *
+ * @example
+ * ```ts
+ * const ok = await deleteScheduleItem("1"); // => true
+ * ```
+ */
+export async function deleteScheduleItem(id: string): Promise<boolean> {
+  const items = await loadScheduleItems();
+  const filtered = items.filter((i) => i.id !== id);
+  if (filtered.length === items.length) return false;
+  await saveScheduleItems(filtered);
+  return true;
+}
+
+/**
+ * 按关键字或时间范围搜索日程。
+ *
+ * @example
+ * ```ts
+ * const results = await findScheduleItems({ keyword: "design" });
+ * const inRange = await findScheduleItems({ startAt: Date.parse("2026-05-01"), endAt: Date.parse("2026-05-07") });
+ * ```
+ */
+export async function findScheduleItems(query: {
+  keyword?: string;
+  startAt?: number;
+  endAt?: number;
+}): Promise<ScheduleItem[]> {
+  const items = await loadScheduleItems();
+  return items.filter((item) => {
+    if (query.keyword && !item.title.toLowerCase().includes(query.keyword.toLowerCase())) {
+      return false;
+    }
+    if (query.startAt && item.startAt < query.startAt) {
+      return false;
+    }
+    if (query.endAt && item.endAt > 0 && item.endAt > query.endAt) {
+      return false;
+    }
+    return true;
+  });
+}

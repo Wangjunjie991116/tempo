@@ -10,5 +10,21 @@
   "speechUnavailable": "Speech recognition is unavailable. Check the mic and permissions.",
   "speechErrorWithDetail": "Speech recognition failed: {{detail}}",
   "speechTooShort": "Too short. Hold the microphone a bit longer.",
-  "speechNoInput": "Didn't catch that. Please speak closer to the mic and try again."
+  "speechNoInput": "Didn’t catch that. Please speak closer to the mic and try again.",
+  "stageUnderstanding": "Understanding your intent...",
+  "stageAnalyzing": "Analyzing time and participants...",
+  "stageThinking": "Planning the best arrangement...",
+  "stageConfirming": "Preparing to execute...",
+  "confirmCreate": "Create schedule",
+  "confirmUpdate": "Update schedule",
+  "confirmDelete": "Delete schedule",
+  "confirmQuery": "Query schedule",
+  "lowConfidence": "Low confidence, please confirm",
+  "cancelled": "Cancelled.",
+  "executing": "Executing...",
+  "created": "Schedule created",
+  "updated": "Schedule updated",
+  "deleted": "Schedule deleted",
+  "notFound": "Not found",
+  "networkError": "Network error. Please try again later."
 }

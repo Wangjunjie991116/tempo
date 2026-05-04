@@ -28,14 +28,10 @@ import Svg, {
 import { useTranslation } from "../../../core/i18n";
 import { useTempoTheme } from "../../../core/theme";
 import { Toast, ToastRenderer } from "../../../core/ui";
+import { useAiChat } from "../hooks/useAiChat";
+import type { ChatMessage } from "../types";
 
 const BAR_COUNT = 21;
-
-type ChatBubble = {
-  id: string;
-  role: "assistant" | "user";
-  text: string;
-};
 
 function pickVoiceLocale(): string {
   const tag = Localization.getLocales()?.[0]?.languageTag ?? "en-US";
@@ -155,6 +151,134 @@ function AiRobotOrbGraphic({ size }: { size: number }) {
   );
 }
 
+function StageIndicator({
+  stage,
+  color,
+}: {
+  stage: { stage: string; label: string };
+  color: string;
+}) {
+  return (
+    <View style={styles.stageRow}>
+      <View style={[styles.stageDot, { backgroundColor: color }]} />
+      <Text style={[styles.stageText, { color }]}>{stage.label}</Text>
+    </View>
+  );
+}
+
+function ThinkingBubble({
+  message,
+  theme,
+}: {
+  message: Extract<ChatMessage, { type: "thinking" }>;
+  theme: ReturnType<typeof useTempoTheme>;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const hasThoughts = message.thoughts.length > 0;
+  const currentStage = message.stages[message.stages.length - 1];
+
+  return (
+    <View style={styles.thinkingBubble}>
+      {currentStage && (
+        <StageIndicator stage={currentStage} color={theme.textMuted} />
+      )}
+      {hasThoughts && (
+        <Pressable onPress={() => setExpanded((v) => !v)}>
+          <Text style={[styles.thinkingToggle, { color: theme.textMuted }]}>
+            {expanded ? "收起思考过程 ▲" : "查看思考过程 ▼"}
+          </Text>
+        </Pressable>
+      )}
+      {expanded && hasThoughts && (
+        <Text
+          style={[styles.thinkingText, { color: theme.textMuted }]}
+          numberOfLines={expanded ? undefined : 2}
+        >
+          {message.thoughts}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+function CommandCard({
+  message,
+  theme,
+  onConfirm,
+  onCancel,
+}: {
+  message: Extract<ChatMessage, { type: "command" }>;
+  theme: ReturnType<typeof useTempoTheme>;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const { action, params, confidence } = message.command;
+  const actionLabels: Record<string, string> = {
+    create_schedule: "创建日程",
+    update_schedule: "更新日程",
+    delete_schedule: "删除日程",
+    query_schedule: "查询日程",
+    chat: "对话",
+  };
+
+  return (
+    <View
+      style={[
+        styles.commandCard,
+        { backgroundColor: theme.brandSelectedHighlight },
+      ]}
+    >
+      <Text style={[styles.commandTitle, { color: theme.textPrimary }]}>
+        {actionLabels[action] ?? action}
+        {confidence < 0.7 && (
+          <Text style={{ color: theme.textMuted, fontSize: 12 }}>
+            {" "}
+            (置信度较低，请确认)
+          </Text>
+        )}
+      </Text>
+      {typeof params.title === "string" && (
+        <Text style={[styles.commandDetail, { color: theme.textMuted }]}>
+          标题：{params.title}
+        </Text>
+      )}
+      {typeof params.start_at === "string" && (
+        <Text style={[styles.commandDetail, { color: theme.textMuted }]}>
+          时间：{params.start_at}
+        </Text>
+      )}
+      <View style={styles.commandButtons}>
+        <Pressable
+          onPress={onConfirm}
+          style={({ pressed }) => [
+            styles.cmdBtn,
+            {
+              backgroundColor: theme.brand,
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}
+        >
+          <Text style={styles.cmdBtnText}>确认</Text>
+        </Pressable>
+        <Pressable
+          onPress={onCancel}
+          style={({ pressed }) => [
+            styles.cmdBtn,
+            {
+              backgroundColor: theme.surfaceElevated,
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}
+        >
+          <Text style={[styles.cmdBtnText, { color: theme.textPrimary }]}>
+            取消
+          </Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 /**
  * 全局 AI 语音入口浮层（悬浮机器人 + 底部对话面板）。
  * UI 独立于业务 Tab；编排与对不同 Tab 的指令分发可在上层 Context / 事件中扩展。
@@ -164,8 +288,10 @@ export function AiFloatingAssistant() {
   const insets = useSafeAreaInsets();
   const { t: tr } = useTranslation(["ai"]);
 
+  const { messages, state, sendMessage, confirmCommand, cancelCommand } =
+    useAiChat();
+
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatBubble[]>([]);
   const [holding, setHolding] = useState(false);
   const [waveTick, setWaveTick] = useState(0);
   const [liveVol, setLiveVol] = useState(0.12);
@@ -178,14 +304,11 @@ export function AiFloatingAssistant() {
   const chatScrollRef = useRef<ScrollView | null>(null);
   const trRef = useRef(tr);
   trRef.current = tr;
-  const msgIdSeq = useRef(0);
-  const nextMsgId = useCallback((prefix: string) => {
-    msgIdSeq.current += 1;
-    return `${prefix}-${Date.now()}-${msgIdSeq.current}`;
-  }, []);
 
   const holdStartTimeRef = useRef(0);
   const isShortSilentTapRef = useRef(false);
+  const isReleasingRef = useRef(false);
+  const releaseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const tabBarBump = Platform.OS === "ios" ? 52 : 58;
   const fabBottom = Math.max(insets.bottom, 10) + tabBarBump + t.space.sm;
@@ -201,17 +324,9 @@ export function AiFloatingAssistant() {
   );
 
   const appendAssistantIntro = useCallback(() => {
-    setMessages((prev) => {
-      if (prev.length > 0) return prev;
-      return [
-        {
-          id: "intro",
-          role: "assistant",
-          text: tr("ai:assistantIntro"),
-        },
-      ];
-    });
-  }, [tr]);
+    // 已由 useAiChat 管理消息，intro 在首次打开时通过 assistantAck 体现
+    // 保留空函数兼容旧调用
+  }, []);
 
   useEffect(() => {
     const drift = Animated.loop(
@@ -289,12 +404,21 @@ export function AiFloatingAssistant() {
       volumeNormRef.current = normalizeSpeechVolume(e.value);
       flushVolumeUi();
     };
+    Voice.onSpeechEnd = () => {
+      // 语音引擎检测到说话结束时，如果用户已经松手，直接触发最终处理
+      if (isReleasingRef.current) {
+        if (releaseTimeoutRef.current) {
+          clearTimeout(releaseTimeoutRef.current);
+          releaseTimeoutRef.current = null;
+        }
+        void finalizeUtteranceInternal();
+      }
+    };
     Voice.onSpeechError = (e) => {
       const elapsed = Date.now() - holdStartTimeRef.current;
       if (isShortSilentTapRef.current || elapsed < 1000) {
         return;
       }
-      // 长按后的语音引擎错误由 finalizeUtterance 统一收口，避免和 info Toast 竞态
       transcriptRef.current = "";
       if (__DEV__) console.warn("[ai-voice] engine error", e.error?.code, e.error?.message);
     };
@@ -304,10 +428,15 @@ export function AiFloatingAssistant() {
         cancelAnimationFrame(volFlushRaf.current);
         volFlushRaf.current = null;
       }
+      if (releaseTimeoutRef.current) {
+        clearTimeout(releaseTimeoutRef.current);
+        releaseTimeoutRef.current = null;
+      }
       void Voice.destroy()
         .then(() => Voice.removeAllListeners())
         .catch(() => undefined);
       transcriptRef.current = "";
+      isReleasingRef.current = false;
     };
   }, [open]);
 
@@ -324,7 +453,13 @@ export function AiFloatingAssistant() {
     });
   }, [messages, open]);
 
-  const finalizeUtterance = useCallback(async () => {
+  const finalizeUtteranceInternal = useCallback(async () => {
+    isReleasingRef.current = false;
+    if (releaseTimeoutRef.current) {
+      clearTimeout(releaseTimeoutRef.current);
+      releaseTimeoutRef.current = null;
+    }
+
     setHolding(false);
     volumeNormRef.current = 0.12;
     setLiveVol(0.12);
@@ -351,21 +486,26 @@ export function AiFloatingAssistant() {
       return;
     }
 
-    const userBubble: ChatBubble = {
-      id: nextMsgId("u"),
-      role: "user",
-      text,
-    };
-    const ack: ChatBubble = {
-      id: nextMsgId("a"),
-      role: "assistant",
-      text: tr("ai:assistantAck"),
-    };
-    setMessages((cur) => [...cur, userBubble, ack]);
-  }, [tr]);
+    // 发送到 AI 后端
+    await sendMessage(text);
+  }, [tr, sendMessage]);
+
+  const finalizeUtterance = useCallback(() => {
+    // 标记用户已松手，给引擎 1000ms 缓冲时间接收最后一批 partial results
+    isReleasingRef.current = true;
+    releaseTimeoutRef.current = setTimeout(() => {
+      void finalizeUtteranceInternal();
+    }, 1000);
+  }, [finalizeUtteranceInternal]);
 
   const startHold = useCallback(async () => {
-    appendAssistantIntro();
+    // 清除之前的 release 状态
+    isReleasingRef.current = false;
+    if (releaseTimeoutRef.current) {
+      clearTimeout(releaseTimeoutRef.current);
+      releaseTimeoutRef.current = null;
+    }
+
     transcriptRef.current = "";
     volumeNormRef.current = 0.12;
     setLiveVol(0.12);
@@ -383,7 +523,7 @@ export function AiFloatingAssistant() {
         text1: tr("ai:speechUnavailable"),
       });
     }
-  }, [appendAssistantIntro, tr]);
+  }, [tr]);
 
   const fabTranslateY = fabBob.interpolate({
     inputRange: [0, 1],
@@ -396,6 +536,66 @@ export function AiFloatingAssistant() {
   });
 
   const panelHeight = Math.min(Dimensions.get("window").height * 0.72, 560);
+
+  const renderMessage = (m: ChatMessage) => {
+    if (m.role === "user") {
+      return (
+        <View key={m.id} style={[styles.bubbleRow, styles.bubbleRowUser]}>
+          <View style={[styles.bubble, { backgroundColor: t.brand }]}>
+            <Text style={[styles.bubbleText, { color: t.surfaceElevated }]}>
+              {m.text}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    if (m.type === "thinking") {
+      return (
+        <View key={m.id} style={[styles.bubbleRow, styles.bubbleRowAssistant]}>
+          <ThinkingBubble message={m} theme={t} />
+        </View>
+      );
+    }
+
+    if (m.type === "command") {
+      return (
+        <View key={m.id} style={[styles.bubbleRow, styles.bubbleRowAssistant]}>
+          <CommandCard
+            message={m}
+            theme={t}
+            onConfirm={confirmCommand}
+            onCancel={cancelCommand}
+          />
+        </View>
+      );
+    }
+
+    if (m.type === "error") {
+      return (
+        <View key={m.id} style={[styles.bubbleRow, styles.bubbleRowAssistant]}>
+          <View style={[styles.bubble, { backgroundColor: "#fef2f2" }]}>
+            <Text style={[styles.bubbleText, { color: "#ef4444" }]}>
+              {m.text}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    // type === "text"
+    return (
+      <View key={m.id} style={[styles.bubbleRow, styles.bubbleRowAssistant]}>
+        <View
+          style={[styles.bubble, { backgroundColor: t.brandSelectedHighlight }]}
+        >
+          <Text style={[styles.bubbleText, { color: t.textPrimary }]}>
+            {m.text}
+          </Text>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <>
@@ -482,45 +682,16 @@ export function AiFloatingAssistant() {
               contentContainerStyle={styles.chatContent}
               keyboardShouldPersistTaps="handled"
             >
-              {messages.map((m) => (
-                <View
-                  key={m.id}
-                  style={[
-                    styles.bubbleRow,
-                    m.role === "user"
-                      ? styles.bubbleRowUser
-                      : styles.bubbleRowAssistant,
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.bubble,
-                      m.role === "user"
-                        ? { backgroundColor: t.brand }
-                        : { backgroundColor: t.brandSelectedHighlight },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.bubbleText,
-                        {
-                          color:
-                            m.role === "user"
-                              ? t.surfaceElevated
-                              : t.textPrimary,
-                        },
-                      ]}
-                    >
-                      {m.text}
-                    </Text>
-                  </View>
-                </View>
-              ))}
+              {messages.map(renderMessage)}
             </ScrollView>
 
             <View style={[styles.voiceDock, { borderTopColor: palette.line }]}>
               <Text style={[styles.holdHint, { color: palette.muted }]}>
-                {holding ? tr("ai:holdListening") : tr("ai:holdToSpeak")}
+                {holding
+                  ? tr("ai:holdListening")
+                  : state === "sending" || state === "streaming"
+                    ? "AI 处理中..."
+                    : tr("ai:holdToSpeak")}
               </Text>
               <View style={styles.waveRow}>
                 {Array.from({ length: BAR_COUNT }).map((_, i) => {
@@ -548,6 +719,7 @@ export function AiFloatingAssistant() {
                 accessibilityLabel={tr("ai:voiceButtonA11y")}
                 onPressIn={startHold}
                 onPressOut={finalizeUtterance}
+                disabled={state === "sending" || state === "streaming"}
                 style={({ pressed }) => [
                   styles.micOuter,
                   {
@@ -556,6 +728,8 @@ export function AiFloatingAssistant() {
                       ? t.brandSelectedHighlight
                       : t.surfaceElevated,
                     transform: [{ scale: pressed || holding ? 1.04 : 1 }],
+                    opacity:
+                      state === "sending" || state === "streaming" ? 0.5 : 1,
                   },
                 ]}
               >
@@ -645,6 +819,74 @@ const styles = StyleSheet.create({
     fontFamily: "Manrope_500Medium",
     fontSize: 15,
     lineHeight: 22,
+  },
+  thinkingBubble: {
+    maxWidth: "86%",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 16,
+    backgroundColor: "transparent",
+  },
+  stageRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  stageDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+  },
+  stageText: {
+    fontFamily: "Manrope_500Medium",
+    fontSize: 12,
+  },
+  thinkingToggle: {
+    fontFamily: "Manrope_500Medium",
+    fontSize: 12,
+    marginBottom: 4,
+    textDecorationLine: "underline",
+  },
+  thinkingText: {
+    fontFamily: "Manrope_400Regular",
+    fontSize: 13,
+    lineHeight: 18,
+    fontStyle: "italic",
+  },
+  commandCard: {
+    maxWidth: "86%",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
+  },
+  commandTitle: {
+    fontFamily: "Manrope_600SemiBold",
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 6,
+  },
+  commandDetail: {
+    fontFamily: "Manrope_400Regular",
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 2,
+  },
+  commandButtons: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 10,
+  },
+  cmdBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  cmdBtnText: {
+    fontFamily: "Manrope_600SemiBold",
+    fontSize: 14,
+    color: "#fff",
   },
   voiceDock: {
     borderTopWidth: StyleSheet.hairlineWidth,

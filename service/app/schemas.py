@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -23,3 +23,28 @@ class ApiEnvelope(BaseModel):
     msg: str
     data: Optional[ScheduleDraft] = None
     traceId: str
+
+
+# ========== AI Chat Schemas ==========
+
+class AiChatContext(BaseModel):
+    currentTime: Optional[str] = None
+    availableTags: Optional[list[str]] = None
+
+
+class AiChatRequest(BaseModel):
+    text: str = Field(..., min_length=1)
+    timezone: Optional[str] = None
+    locale: Optional[str] = None
+    context: Optional[dict[str, Any]] = None
+
+
+class AiCommand(BaseModel):
+    action: str = Field(..., description="One of: create_schedule, update_schedule, delete_schedule, query_schedule, chat")
+    params: dict[str, Any] = Field(default_factory=dict)
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+
+
+class StreamEvent(BaseModel):
+    event: str = Field(..., description="One of: stage, thought, command, done, error")
+    data: dict[str, Any]

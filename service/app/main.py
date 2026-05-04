@@ -1,11 +1,15 @@
+import os
 import uuid
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
+
+load_dotenv()
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.routers import schedule
+from app.routers import ai, schedule
 from app.schemas import ApiEnvelope
 
 app = FastAPI(title="Tempo Service")
@@ -37,3 +41,4 @@ app.add_middleware(
 )
 
 app.include_router(schedule.router)
+app.include_router(ai.router)

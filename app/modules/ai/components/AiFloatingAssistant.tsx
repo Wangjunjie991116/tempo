@@ -1060,7 +1060,7 @@ const styles = StyleSheet.create({
     fontFamily: "Manrope_400Regular",
     fontSize: 12,
     marginTop: 4,
-    marginLeft: 14,
-    opacity: 0.5,
+    marginRight: 14,
+    alignSelf: "flex-end",
   },
 });

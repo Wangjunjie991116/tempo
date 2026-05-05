@@ -15,6 +15,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { navigationRef } from "../../../core/navigation/navigationRef";
+import { ROOT_STACK } from "../../../core/navigation/routes";
 import Svg, {
   Circle,
   Defs,
@@ -358,7 +360,35 @@ function CommandCard({
  * 全局 AI 语音入口浮层（悬浮机器人 + 底部对话面板）。
  * UI 独立于业务 Tab；编排与对不同 Tab 的指令分发可在上层 Context / 事件中扩展。
  */
+function useIsMainRoute(): boolean {
+  const [isMain, setIsMain] = useState(false);
+
+  useEffect(() => {
+    const checkRoute = () => {
+      if (!navigationRef.isReady()) return;
+      try {
+        const state = navigationRef.getRootState();
+        const routeName = state.routes[state.index]?.name;
+        setIsMain(routeName === ROOT_STACK.Main);
+      } catch {
+        // navigation state not available yet
+      }
+    };
+
+    // initial check with retry for startup timing
+    const timer = setTimeout(checkRoute, 0);
+    const unsubscribe = navigationRef.addListener("state", checkRoute);
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
+  }, []);
+
+  return isMain;
+}
+
 export function AiFloatingAssistant() {
+  const visible = useIsMainRoute();
   const t = useTempoTheme();
   const insets = useSafeAreaInsets();
   const { t: tr } = useTranslation(["ai"]);
@@ -676,82 +706,84 @@ export function AiFloatingAssistant() {
 
   return (
     <>
-      <Animated.View
-        pointerEvents="box-none"
-        style={[
-          styles.fabWrap,
-          {
-            bottom: fabBottom,
-            right: t.space.lg,
-            transform: [{ translateY: fabTranslateY }],
-          },
-        ]}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={tr("ai:fabA11y")}
-          onPress={() => {
-            setOpen(true);
-            appendAssistantIntro();
-          }}
-          style={({ pressed }) => [
-            styles.fabBtn,
-            {
-              backgroundColor: t.surfaceElevated,
-              shadowColor: palette.orbShadow,
-              opacity: pressed ? 0.92 : 1,
-            },
-          ]}
-        >
-          <Animated.View style={{ transform: [{ scale: orbPulse }] }}>
-            <AiRobotOrbGraphic size={52} />
-          </Animated.View>
-        </Pressable>
-      </Animated.View>
-
-      <Modal
-        visible={open}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOpen(false)}
-      >
-        <View style={styles.modalRoot}>
-          <ToastRenderer />
-          {Platform.OS === "ios" ? (
-            <BlurView
-              intensity={28}
-              tint="dark"
-              style={StyleSheet.absoluteFill}
-            />
-          ) : (
-            <View style={[StyleSheet.absoluteFill, styles.androidDim]} />
-          )}
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            onPress={() => setOpen(false)}
-          />
-
-          <View
+      {visible && (
+        <>
+          <Animated.View
+            pointerEvents="box-none"
             style={[
-              styles.sheet,
+              styles.fabWrap,
               {
-                height: panelHeight,
-                backgroundColor: palette.panelBg,
-                borderTopLeftRadius: t.radius.md,
-                borderTopRightRadius: t.radius.md,
-                paddingBottom: Math.max(insets.bottom, t.space.md),
+                bottom: fabBottom,
+                right: t.space.lg,
+                transform: [{ translateY: fabTranslateY }],
               },
             ]}
           >
-            <View
-              style={[styles.sheetHandle, { backgroundColor: palette.line }]}
-            />
-            <Text style={[styles.sheetTitle, { color: t.textPrimary }]}>
-              {tr("ai:panelTitle")}
-            </Text>
-            <Text style={[styles.sheetHint, { color: palette.muted }]}>
-              {tr("ai:panelHint")}
-            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={tr("ai:fabA11y")}
+              onPress={() => {
+                setOpen(true);
+                appendAssistantIntro();
+              }}
+              style={({ pressed }) => [
+                styles.fabBtn,
+                {
+                  backgroundColor: t.surfaceElevated,
+                  shadowColor: palette.orbShadow,
+                  opacity: pressed ? 0.92 : 1,
+                },
+              ]}
+            >
+              <Animated.View style={{ transform: [{ scale: orbPulse }] }}>
+                <AiRobotOrbGraphic size={52} />
+              </Animated.View>
+            </Pressable>
+          </Animated.View>
+
+          <Modal
+            visible={open}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setOpen(false)}
+          >
+            <View style={styles.modalRoot}>
+              <ToastRenderer />
+              {Platform.OS === "ios" ? (
+                <BlurView
+                  intensity={28}
+                  tint="dark"
+                  style={StyleSheet.absoluteFill}
+                />
+              ) : (
+                <View style={[StyleSheet.absoluteFill, styles.androidDim]} />
+              )}
+              <Pressable
+                style={StyleSheet.absoluteFill}
+                onPress={() => setOpen(false)}
+              />
+
+              <View
+                style={[
+                  styles.sheet,
+                  {
+                    height: panelHeight,
+                    backgroundColor: palette.panelBg,
+                    borderTopLeftRadius: t.radius.md,
+                    borderTopRightRadius: t.radius.md,
+                    paddingBottom: Math.max(insets.bottom, t.space.md),
+                  },
+                ]}
+              >
+                <View
+                  style={[styles.sheetHandle, { backgroundColor: palette.line }]}
+                />
+                <Text style={[styles.sheetTitle, { color: t.textPrimary }]}>
+                  {tr("ai:panelTitle")}
+                </Text>
+                <Text style={[styles.sheetHint, { color: palette.muted }]}>
+                  {tr("ai:panelHint")}
+                </Text>
 
             <ScrollView
               ref={chatScrollRef}
@@ -820,7 +852,9 @@ export function AiFloatingAssistant() {
             </View>
           </View>
         </View>
-      </Modal>
+          </Modal>
+        </>
+      )}
     </>
   );
 }

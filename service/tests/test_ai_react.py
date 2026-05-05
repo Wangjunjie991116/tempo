@@ -106,6 +106,18 @@ def test_parse_xml_tool_call_with_value_attr():
     assert result["action_input"]["timezone"] == "Asia/Shanghai"
 
 
+def test_parse_search_web_action():
+    text = """Thought: 用户提到高铁行程，我需要先搜索相关信息
+Action: search_web
+Action Input: {"query": "上海到北京高铁时刻表 明天下午", "num_results": 3}"""
+
+    result = _parse_react_output(text)
+    assert result["type"] == "action"
+    assert result["action"] == "search_web"
+    assert result["action_input"]["query"] == "上海到北京高铁时刻表 明天下午"
+    assert result["action_input"]["num_results"] == 3
+
+
 def test_parse_empty_fallback():
     result = _parse_react_output("")
     assert result["type"] == "final"

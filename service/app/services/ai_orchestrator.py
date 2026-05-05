@@ -10,6 +10,7 @@ from openai import AsyncOpenAI
 from app.schemas import AiChatRequest, AiCommand, StreamEvent
 from app.services.prompt_templates import SYSTEM_PROMPT
 from app.services.time_parser import parse_time
+from app.services.web_search import search_web
 
 
 def _log(label: str, data: dict | str | None = None) -> None:
@@ -118,10 +119,25 @@ TOOLS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_web",
+            "description": "Search the web for real-time external information such as train/flight schedules, weather, events, venues, opening hours. Use this BEFORE asking the user for details they might not know.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Search query in Chinese or English"},
+                    "num_results": {"type": "integer", "description": "Number of results (1-5)", "default": 3},
+                },
+                "required": ["query"],
+            },
+        },
+    },
 ]
 
 
-BACKEND_TOOLS = {"parse_time"}
+BACKEND_TOOLS = {"parse_time", "search_web"}
 CLIENT_TRANSPARENT_TOOLS = {"query_schedule"}
 FINAL_TOOLS = {"create_schedule", "update_schedule", "delete_schedule"}
 
@@ -394,9 +410,10 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
         valid_tool_calls = [tc for tc in tool_calls if tc.get("function", {}).get("name")]
         _log("valid_tool_calls", {"count": len(valid_tool_calls), "names": [tc["function"]["name"] for tc in valid_tool_calls]})
 
-        # Defensive: log malformed tool_calls so we can diagnose provider issues
-        if not valid_tool_calls and tool_calls:
-            _log("malformed_tool_calls", {"raw": tool_calls})
+        # Defensive: log malformed or filtered tool_calls so we can diagnose provider issues
+        malformed = [tc for tc in tool_calls if not tc.get("function", {}).get("name")]
+        if malformed:
+            _log("malformed_tool_calls", {"filtered_count": len(malformed), "raw": malformed})
 
         if valid_tool_calls:
             # Classify tool calls
@@ -443,6 +460,26 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
                     ref = args.get("reference_time", datetime.now(timezone.utc).isoformat())
                     parsed = parse_time(expression, tz, ref)
                     observation = parsed if parsed else "无法解析时间表达式"
+
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc["id"],
+                        "content": observation,
+                        "name": tc["function"]["name"],
+                    })
+                elif tc["function"]["name"] == "search_web":
+                    query = args.get("query", "")
+                    num_results = min(max(args.get("num_results", 3), 1), 5)
+                    observation = search_web(query, num_results)
+                    _log("search_web_observation", {"query": query, "length": len(observation), "preview": observation[:200]})
+
+                    # Defensive: prevent search loops by nudging the LLM if it keeps searching
+                    search_count = sum(
+                        1 for m in messages
+                        if m.get("role") == "tool" and m.get("name") == "search_web"
+                    )
+                    if search_count >= 1:
+                        observation += "\n\n（提示：你已经搜索过相关信息，请立即基于以上结果创建或更新日程，不要再继续搜索。）"
 
                     messages.append({
                         "role": "tool",
@@ -525,6 +562,14 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
                     ref = action_input.get("reference_time", datetime.now(timezone.utc).isoformat())
                     parsed = parse_time(expression, tz, ref)
                     observation = parsed if parsed else "无法解析时间表达式"
+
+                    assistant_content = f"{thought}\nAction: {action_name}\nAction Input: {json.dumps(action_input, ensure_ascii=False)}\nObservation: {observation}"
+                    messages.append({"role": "assistant", "content": assistant_content})
+                    continue
+                elif action_name == "search_web":
+                    query = action_input.get("query", "")
+                    num_results = min(max(action_input.get("num_results", 3), 1), 5)
+                    observation = search_web(query, num_results)
 
                     assistant_content = f"{thought}\nAction: {action_name}\nAction Input: {json.dumps(action_input, ensure_ascii=False)}\nObservation: {observation}"
                     messages.append({"role": "assistant", "content": assistant_content})

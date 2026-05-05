@@ -106,7 +106,7 @@ export function useAiChat() {
               status: "upcoming",
               attendeeCount: (params.attendee_count as number) ?? 1,
             });
-            return `已创建日程：${params.title ?? "未命名日程"}`;
+            return `✅已创建日程：${params.title ?? "未命名日程"}`;
           }
           case "update_schedule": {
             const params = command.params;
@@ -138,7 +138,7 @@ export function useAiChat() {
               patch.attendeeCount = params.attendee_count;
             const updated = await updateScheduleItem(id, patch);
             return updated
-              ? `已更新日程：${updated.title}`
+              ? `✅已更新日程：${updated.title}`
               : `更新失败：找不到 ID 为 ${id} 的日程。`;
           }
           case "delete_schedule": {
@@ -159,9 +159,9 @@ export function useAiChat() {
             if (!id) {
               return "删除失败：缺少日程 ID 或定位描述。";
             }
-            const ok = await deleteScheduleItem(id);
-            return ok
-              ? `已删除日程。`
+            const deleted = await deleteScheduleItem(id);
+            return deleted
+              ? `✅已删除日程：${deleted.title}`
               : `删除失败：找不到 ID 为 ${id} 的日程。`;
           }
           case "query_schedule": {
@@ -389,26 +389,12 @@ export function useAiChat() {
                   collectedCommand = cmd;
                   collectedBatch = batch;
                   setPendingBatch(batch);
-                  setMessages((prev) =>
-                    prev.map((m) =>
-                      m.id === assistantMsgId && m.type === "thinking"
-                        ? { ...m, command: cmd, commands: batch ?? undefined }
-                        : m,
-                    ),
-                  );
                 }
               } else if (ev.event === "command") {
                 const cmd = ev.data as AiCommand;
                 collectedCommand = cmd;
                 collectedBatch = null;
                 setPendingBatch(null);
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantMsgId && m.type === "thinking"
-                      ? { ...m, command: cmd }
-                      : m,
-                  ),
-                );
               } else if (ev.event === "error") {
                 const errData = ev.data as { code: number; message: string };
                 reject(new Error(errData.message));
@@ -468,40 +454,34 @@ export function useAiChat() {
         if (cmd.confidence < 0.7) {
           setPendingCommand(cmd);
           setState("confirming");
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantMsgId
-                ? {
-                    id: assistantMsgId,
-                    role: "assistant",
-                    type: "command",
-                    command: cmd,
-                    commands: collectedBatch ?? undefined,
-                    confirmed: false,
-                  }
-                : m,
-            ),
-          );
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: nextId("a", seqRef),
+              role: "assistant",
+              type: "command",
+              command: cmd,
+              commands: collectedBatch ?? undefined,
+              confirmed: false,
+            },
+          ]);
           return;
         }
 
         if (cmd.action === "create_schedule") {
           setPendingCommand(cmd);
           setState("confirming");
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantMsgId
-                ? {
-                    id: assistantMsgId,
-                    role: "assistant",
-                    type: "command",
-                    command: cmd,
-                    commands: collectedBatch ?? undefined,
-                    confirmed: false,
-                  }
-                : m,
-            ),
-          );
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: nextId("a", seqRef),
+              role: "assistant",
+              type: "command",
+              command: cmd,
+              commands: collectedBatch ?? undefined,
+              confirmed: false,
+            },
+          ]);
           return;
         }
 
@@ -513,50 +493,41 @@ export function useAiChat() {
             results.push(result);
           }
           const combinedText = results.join("\n");
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantMsgId
-                ? {
-                    id: assistantMsgId,
-                    role: "assistant",
-                    type: "text",
-                    text: combinedText,
-                  }
-                : m,
-            ),
-          );
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: nextId("a", seqRef),
+              role: "assistant",
+              type: "text",
+              text: combinedText,
+            },
+          ]);
           setAiMessages((prev) => [...prev, { role: "assistant", content: combinedText }]);
         } else {
           const resultText = await executeCommand(cmd, assistantMsgId);
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantMsgId
-                ? {
-                    id: assistantMsgId,
-                    role: "assistant",
-                    type: "text",
-                    text: resultText,
-                  }
-                : m,
-            ),
-          );
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: nextId("a", seqRef),
+              role: "assistant",
+              type: "text",
+              text: resultText,
+            },
+          ]);
           setAiMessages((prev) => [...prev, { role: "assistant", content: resultText }]);
         }
         setState("done");
       } else {
         const fallbackText = "抱歉，我没有理解你的请求。";
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantMsgId
-              ? {
-                  id: assistantMsgId,
-                  role: "assistant",
-                  type: "text",
-                  text: fallbackText,
-                }
-              : m,
-          ),
-        );
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: nextId("a", seqRef),
+            role: "assistant",
+            type: "text",
+            text: fallbackText,
+          },
+        ]);
         setAiMessages((prev) => [...prev, { role: "assistant", content: fallbackText }]);
         setState("done");
       }
@@ -564,18 +535,15 @@ export function useAiChat() {
       const message =
         err instanceof Error ? err.message : "网络异常，请稍后重试";
       Toast.show({ type: "error", text1: message });
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantMsgId
-            ? {
-                id: assistantMsgId,
-                role: "assistant",
-                type: "error",
-                text: message,
-              }
-            : m,
-        ),
-      );
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: nextId("a", seqRef),
+          role: "assistant",
+          type: "error",
+          text: message,
+        },
+      ]);
       setState("error");
     }
   }

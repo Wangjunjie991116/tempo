@@ -1,5 +1,6 @@
 import Voice from "@react-native-voice/voice";
 import { BlurView } from "expo-blur";
+import * as Haptics from "expo-haptics";
 import * as Localization from "expo-localization";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -595,14 +596,16 @@ export function AiFloatingAssistant() {
   }, [tr, sendMessage]);
 
   const finalizeUtterance = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     // 标记用户已松手，给引擎 1000ms 缓冲时间接收最后一批 partial results
     isReleasingRef.current = true;
     releaseTimeoutRef.current = setTimeout(() => {
       void finalizeUtteranceInternal();
-    }, 1000);
+    }, 300);
   }, [finalizeUtteranceInternal]);
 
   const startHold = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     // 清除之前的 release 状态
     isReleasingRef.current = false;
     if (releaseTimeoutRef.current) {

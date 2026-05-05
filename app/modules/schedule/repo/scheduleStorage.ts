@@ -227,19 +227,21 @@ export async function updateScheduleItem(
 }
 
 /**
- * 根据 ID 删除单条日程；返回是否成功删除。
+ * 根据 ID 删除单条日程；返回被删除的日程对象，找不到时返回 null。
  *
  * @example
  * ```ts
- * const ok = await deleteScheduleItem("1"); // => true
+ * const deleted = await deleteScheduleItem("1"); // => { id: "1", title: "..." }
  * ```
  */
-export async function deleteScheduleItem(id: string): Promise<boolean> {
+export async function deleteScheduleItem(id: string): Promise<ScheduleItem | null> {
   const items = await loadScheduleItems();
+  const index = items.findIndex((i) => i.id === id);
+  if (index === -1) return null;
+  const deleted = items[index];
   const filtered = items.filter((i) => i.id !== id);
-  if (filtered.length === items.length) return false;
   await saveScheduleItems(filtered);
-  return true;
+  return deleted;
 }
 
 /**

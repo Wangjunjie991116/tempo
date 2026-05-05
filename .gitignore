@@ -1,16 +1,27 @@
-node_modules/
-dist/
+# ai
+openspec/
+
+# config
 .expo/
-ios/
-android/
-*.pyc
-__pycache__/
-.pytest_cache/
-.venv/
-venv/
 .env
 .env.*
 !.env.example
 !.env.dev
 .DS_Store
+.mcp.json
+
+# build
+dist/
+ios/
+android/
+
+# node_modules
+node_modules/
 .pnpm-store/**
+
+# py
+*.pyc
+__pycache__/
+.pytest_cache/
+.venv/
+venv/

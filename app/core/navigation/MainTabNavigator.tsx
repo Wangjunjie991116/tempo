@@ -1,7 +1,9 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { AiFloatingAssistant } from "../../modules/ai";
 
 import FinanceHomeScreen from "../../modules/finance/FinanceHomeScreen";
 import { ScheduleStackNavigator } from "../../modules/schedule/navigation/ScheduleStackNavigator";
@@ -41,63 +43,66 @@ export function MainTabNavigator() {
   const insets = useSafeAreaInsets();
 
   return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarActiveTintColor: t.brand,
-        tabBarInactiveTintColor: t.textMuted,
-        tabBarStyle: {
-          backgroundColor: t.screenBg,
-          borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: t.divider,
-          elevation: 0,
-          shadowOpacity: 0,
-          shadowOffset: { width: 0, height: 0 },
-          paddingTop: 6,
-          paddingBottom: Math.max(insets.bottom, 10),
-          minHeight: 52,
-        },
-        tabBarLabelStyle: {
-          fontFamily: "Manrope_500Medium",
-          fontSize: 11,
-          marginTop: 2,
-        },
-        tabBarIcon: ({ color, size, focused }) => {
-          const dim = focused ? Math.min(size + 2, 26) : Math.max(size - 1, 20);
-          switch (route.name) {
-            case MAIN_TAB.Schedule:
-              return <TabScheduleIcon color={color} size={dim} />;
-            case MAIN_TAB.Finance:
-              return <TabFinanceIcon color={color} size={dim} />;
-            case MAIN_TAB.User:
-              return <TabUserIcon color={color} size={dim} />;
-            default:
-              return null;
-          }
-        },
-      })}
-    >
-      <Tab.Screen
-        name={MAIN_TAB.Schedule}
-        component={ScheduleStackNavigator}
-        options={{
-          tabBarLabel: tr("schedule:tabTitle"),
-          headerTitle: tr("schedule:tabTitle"),
-        }}
-      />
-      <Tab.Screen
-        name={MAIN_TAB.Finance}
-        component={FinanceHomeScreen}
-        options={{
-          tabBarLabel: tr("common:tabFinance"),
-          headerTitle: tr("common:tabFinance"),
-        }}
-      />
-      <Tab.Screen
-        name={MAIN_TAB.User}
-        component={UserStackNavigator}
-        options={{ tabBarLabel: tr("common:tabUser"), headerShown: false }}
-      />
-    </Tab.Navigator>
+    <View style={{ flex: 1 }}>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          headerShown: false,
+          tabBarActiveTintColor: t.brand,
+          tabBarInactiveTintColor: t.textMuted,
+          tabBarStyle: {
+            backgroundColor: t.screenBg,
+            borderTopWidth: StyleSheet.hairlineWidth,
+            borderTopColor: t.divider,
+            elevation: 0,
+            shadowOpacity: 0,
+            shadowOffset: { width: 0, height: 0 },
+            paddingTop: 6,
+            paddingBottom: Math.max(insets.bottom, 10),
+            minHeight: 52,
+          },
+          tabBarLabelStyle: {
+            fontFamily: "Manrope_500Medium",
+            fontSize: 11,
+            marginTop: 2,
+          },
+          tabBarIcon: ({ color, size, focused }) => {
+            const dim = focused ? Math.min(size + 2, 26) : Math.max(size - 1, 20);
+            switch (route.name) {
+              case MAIN_TAB.Schedule:
+                return <TabScheduleIcon color={color} size={dim} />;
+              case MAIN_TAB.Finance:
+                return <TabFinanceIcon color={color} size={dim} />;
+              case MAIN_TAB.User:
+                return <TabUserIcon color={color} size={dim} />;
+              default:
+                return null;
+            }
+          },
+        })}
+      >
+        <Tab.Screen
+          name={MAIN_TAB.Schedule}
+          component={ScheduleStackNavigator}
+          options={{
+            tabBarLabel: tr("schedule:tabTitle"),
+            headerTitle: tr("schedule:tabTitle"),
+          }}
+        />
+        <Tab.Screen
+          name={MAIN_TAB.Finance}
+          component={FinanceHomeScreen}
+          options={{
+            tabBarLabel: tr("common:tabFinance"),
+            headerTitle: tr("common:tabFinance"),
+          }}
+        />
+        <Tab.Screen
+          name={MAIN_TAB.User}
+          component={UserStackNavigator}
+          options={{ tabBarLabel: tr("common:tabUser"), headerShown: false }}
+        />
+      </Tab.Navigator>
+      <AiFloatingAssistant />
+    </View>
   );
 }

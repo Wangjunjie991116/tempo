@@ -16,7 +16,7 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
   echo "请在当前系统打开三个终端，分别执行：" >&2
   echo "  pnpm dev:service" >&2
   echo "  pnpm dev:web" >&2
-  echo "  pnpm dev:app" >&2
+  echo "  pnpm dev:ios" >&2
   exit 1
 fi
 
@@ -28,7 +28,7 @@ if ! osascript -e 'tell application "iTerm" to get name' >/dev/null 2>&1; then
   echo "若不使用 iTerm，请在三个终端分别执行：" >&2
   echo "  pnpm dev:service" >&2
   echo "  pnpm dev:web" >&2
-  echo "  pnpm dev:app" >&2
+  echo "  pnpm dev:ios" >&2
   exit 1
 fi
 
@@ -59,7 +59,7 @@ on run
 			create tab with default profile
 		end tell
 		tell current session of current window
-			write text (prep & "pnpm dev:app")
+			write text (prep & "pnpm dev:ios")
 		end tell
 	end tell
 end run
@@ -69,9 +69,9 @@ then
   echo >&2 "AppleScript 打开 iTerm 窗口失败。常见原因：" >&2
   echo >&2 "  • 系统设置 → 隐私与安全性 → 自动化：允许当前终端（或 Cursor）控制「iTerm」" >&2
   echo >&2 "  • iTerm 正在请求前台权限时被拒绝" >&2
-  echo >&2 "请改用三个终端分别运行：pnpm dev:service / pnpm dev:web / pnpm dev:app" >&2
+  echo >&2 "请改用三个终端分别运行：pnpm dev:service / pnpm dev:web / pnpm dev:ios" >&2
   exit 1
 fi
 
-echo "已在 iTerm2 新建 1 个窗口（3 个 Tab）：pnpm dev:service / dev:web / dev:app"
+echo "已在 iTerm2 新建 1 个窗口（3 个 Tab）：pnpm dev:service / dev:web / dev:ios"
 echo "项目目录：$ROOT"

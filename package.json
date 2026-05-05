@@ -12,6 +12,7 @@
     "dev": "bash scripts/dev-iterm.sh",
     "dev:web": "pnpm --filter web dev",
     "dev:app": "pnpm --filter app start",
+    "dev:ios": "pnpm --filter app ios",
     "dev:service": "cd service && PATH=\"$HOME/.local/bin:$PATH\" uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
   }
 }

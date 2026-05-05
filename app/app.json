@@ -18,8 +18,12 @@
         "CFBundleAllowMixedLocalizations": true,
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        }
-      }
+        },
+        "NSMicrophoneUsageDescription": "轻程需要使用麦克风，以便你用语音与日程助手沟通。",
+        "NSSpeechRecognitionUsageDescription": "轻程将你的语音转为文字，以便日程助手理解你的口述内容。仅在你按住说话时处理。",
+        "NSLocalNetworkUsageDescription": "轻程（Tempo）需要从你的 Mac 加载本地开发页面（WebView），请在提示时允许访问本地网络。"
+      },
+      "bundleIdentifier": "com.junjiewang.tempo"
     },
     "android": {
       "adaptiveIcon": {
@@ -27,7 +31,9 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["RECORD_AUDIO", "android.permission.RECORD_AUDIO"],
+      "package": "com.junjiewang.tempo"
     },
     "web": {
       "favicon": "./assets/tempo-icon.png"

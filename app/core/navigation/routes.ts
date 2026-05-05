@@ -3,12 +3,16 @@
  */
 export const ROOT_STACK = {
   Splash: "Splash",
+  Onboarding: "Onboarding",
   Auth: "Auth",
   Main: "Main",
 } as const;
 
 export const AUTH_STACK = {
   Login: "Login",
+  SignUp: "SignUp",
+  ForgotPassword: "ForgotPassword",
+  ChangePassword: "ChangePassword",
 } as const;
 
 export const MAIN_TAB = {

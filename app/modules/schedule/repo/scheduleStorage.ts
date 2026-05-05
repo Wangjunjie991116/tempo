@@ -1,15 +1,32 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { DEFAULT_SCHEDULE_ITEMS } from "./seed";
 import type { ScheduleItem } from "./types";
 
 /** 唯一持久化键（不再按版本维护多套 key）。 */
 export const SCHEDULE_STORAGE_KEY = "tempo.schedule";
 
-/** 旧键名：启动覆盖写入时顺带删除，避免残留。 */
-const LEGACY_SCHEDULE_STORAGE_KEY_V3 = "tempo.schedule.v3";
-
 const VALID_TAGS = new Set<ScheduleItem["tag"]>(["design_review", "workshop", "brainstorm"]);
+
+const listeners = new Set<() => void>();
+
+/**
+ * 注册日程数据变更监听器；返回取消订阅函数。
+ *
+ * @example
+ * ```ts
+ * const unsubscribe = subscribeScheduleChanges(() => refreshList());
+ * // ...
+ * unsubscribe();
+ * ```
+ */
+export function subscribeScheduleChanges(callback: () => void): () => void {
+  listeners.add(callback);
+  return () => listeners.delete(callback);
+}
+
+function notifyScheduleChanged(): void {
+  listeners.forEach((cb) => cb());
+}
 
 /**
  * 读库时将 `number` 或 **旧版 ISO 字符串** 统一为毫秒戳。
@@ -94,21 +111,6 @@ function coerceScheduleItem(row: unknown): ScheduleItem | null {
 }
 
 /**
- * 深拷贝内置默认 JSON，得到可安全 mutate 的 `ScheduleItem[]`（与常量引用脱钩）。
- *
- * @example
- * ```ts
- * const a = cloneDefaultItems();
- * const b = cloneDefaultItems();
- * a[0].title = "mutated";
- * // DEFAULT_SCHEDULE_ITEMS[0].title 不变；b[0].title 仍为原始演示文案
- * ```
- */
-function cloneDefaultItems(): ScheduleItem[] {
-  return JSON.parse(JSON.stringify(DEFAULT_SCHEDULE_ITEMS)) as ScheduleItem[];
-}
-
-/**
  * 将 AsyncStorage 读出的原始字符串 **安全解析** 为日程数组；非法项丢弃；非法输入整体视为「空数组」。
  *
  * @param raw `getItem` 返回值；`null`/空串/非数组 JSON 等均收敛为 `[]`
@@ -131,48 +133,27 @@ function parseStoredItems(raw: string | null): ScheduleItem[] {
 }
 
 /**
- * 是否已完成「本轮 JS 进程」的首次加载。
- * 每次 App 冷启动后第一次 `loadScheduleItems`：无视库里已有内容，写入 **`DEFAULT_SCHEDULE_ITEMS`** 克隆；
- * 同一会话内后续调用则正常读库（本会话内若有 `saveScheduleItems` 仍可持久化并被读到）。
- */
-let startupOverwriteApplied = false;
-
-/**
  * 并发多次 `loadScheduleItems()`（例如 Strict Mode 双挂载）共用同一 Promise，避免交叉读写。
  */
 let loadInflight: Promise<ScheduleItem[]> | null = null;
 
 /**
- * `loadScheduleItems` 的内部实现：冷启动写入默认数据、读键、空库回退。
+ * `loadScheduleItems` 的内部实现：从 AsyncStorage 读取用户本地日程数据。
  */
 async function loadScheduleItemsInternal(): Promise<ScheduleItem[]> {
-  if (!startupOverwriteApplied) {
-    startupOverwriteApplied = true;
-    const initial = cloneDefaultItems();
-    await AsyncStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(initial));
-    await AsyncStorage.removeItem(LEGACY_SCHEDULE_STORAGE_KEY_V3);
-    return initial;
-  }
-
   const raw = await AsyncStorage.getItem(SCHEDULE_STORAGE_KEY);
-  let parsed = parseStoredItems(raw);
-  if (parsed.length === 0) {
-    const initial = cloneDefaultItems();
-    await AsyncStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(initial));
-    return initial;
-  }
-  return parsed;
+  return parseStoredItems(raw);
 }
 
 /**
- * 读取本地日程：进程内首次调用会先覆盖写入内置默认数据；之后读取当前键值。
+ * 读取本地日程：直接从 AsyncStorage 读取并解析用户数据。
  *
- * @returns 解析后的 `ScheduleItem[]`（首次必定为默认 6 条的克隆）
+ * @returns 解析后的 `ScheduleItem[]`；本地无数据时返回空数组
  *
  * @example
  * ```ts
- * const items = await loadScheduleItems(); // 冷启动首次：写入默认数据并返回
- * const again = await loadScheduleItems(); // 同进程：从 AsyncStorage 读出上次持久化结果
+ * const items = await loadScheduleItems(); // 从 AsyncStorage 读取用户本地日程
+ * const again = await loadScheduleItems(); // 同进程：复用 inflight Promise
  * ```
  */
 export async function loadScheduleItems(): Promise<ScheduleItem[]> {
@@ -194,4 +175,98 @@ export async function loadScheduleItems(): Promise<ScheduleItem[]> {
  */
 export async function saveScheduleItems(items: ScheduleItem[]): Promise<void> {
   await AsyncStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(items));
+  notifyScheduleChanged();
+}
+
+/**
+ * 追加一条新日程到本地存储。
+ *
+ * @example
+ * ```ts
+ * const newItem = await addScheduleItem({
+ *   title: "New Meeting",
+ *   tag: "workshop",
+ *   startAt: Date.now(),
+ *   endAt: Date.now() + 3600000,
+ *   status: "upcoming",
+ *   attendeeCount: 3,
+ * });
+ * ```
+ */
+export async function addScheduleItem(
+  item: Omit<ScheduleItem, "id">,
+): Promise<ScheduleItem> {
+  const items = await loadScheduleItems();
+  const newItem: ScheduleItem = {
+    ...item,
+    id: `sched-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  };
+  items.push(newItem);
+  await saveScheduleItems(items);
+  return newItem;
+}
+
+/**
+ * 根据 ID 更新单条日程；找不到时返回 null。
+ *
+ * @example
+ * ```ts
+ * await updateScheduleItem("1", { title: "Updated Title", attendeeCount: 5 });
+ * ```
+ */
+export async function updateScheduleItem(
+  id: string,
+  patch: Partial<Omit<ScheduleItem, "id">>,
+): Promise<ScheduleItem | null> {
+  const items = await loadScheduleItems();
+  const index = items.findIndex((i) => i.id === id);
+  if (index === -1) return null;
+  items[index] = { ...items[index], ...patch };
+  await saveScheduleItems(items);
+  return items[index];
+}
+
+/**
+ * 根据 ID 删除单条日程；返回是否成功删除。
+ *
+ * @example
+ * ```ts
+ * const ok = await deleteScheduleItem("1"); // => true
+ * ```
+ */
+export async function deleteScheduleItem(id: string): Promise<boolean> {
+  const items = await loadScheduleItems();
+  const filtered = items.filter((i) => i.id !== id);
+  if (filtered.length === items.length) return false;
+  await saveScheduleItems(filtered);
+  return true;
+}
+
+/**
+ * 按关键字或时间范围搜索日程。
+ *
+ * @example
+ * ```ts
+ * const results = await findScheduleItems({ keyword: "design" });
+ * const inRange = await findScheduleItems({ startAt: Date.parse("2026-05-01"), endAt: Date.parse("2026-05-07") });
+ * ```
+ */
+export async function findScheduleItems(query: {
+  keyword?: string;
+  startAt?: number;
+  endAt?: number;
+}): Promise<ScheduleItem[]> {
+  const items = await loadScheduleItems();
+  return items.filter((item) => {
+    if (query.keyword && !item.title.toLowerCase().includes(query.keyword.toLowerCase())) {
+      return false;
+    }
+    if (query.startAt && item.startAt < query.startAt) {
+      return false;
+    }
+    if (query.endAt && item.endAt > 0 && item.endAt > query.endAt) {
+      return false;
+    }
+    return true;
+  });
 }

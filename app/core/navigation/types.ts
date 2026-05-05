@@ -22,10 +22,14 @@ export type MainTabParamList = {
 
 export type AuthStackParamList = {
   [AUTH_STACK.Login]: undefined;
+  [AUTH_STACK.SignUp]: undefined;
+  [AUTH_STACK.ForgotPassword]: undefined;
+  [AUTH_STACK.ChangePassword]: undefined;
 };
 
 export type RootStackParamList = {
   [ROOT_STACK.Splash]: undefined;
+  [ROOT_STACK.Onboarding]: undefined;
   [ROOT_STACK.Auth]: NavigatorScreenParams<AuthStackParamList>;
   [ROOT_STACK.Main]: NavigatorScreenParams<MainTabParamList>;
 };

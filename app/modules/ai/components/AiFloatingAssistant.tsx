@@ -394,7 +394,7 @@ export function AiFloatingAssistant() {
   const insets = useSafeAreaInsets();
   const { t: tr } = useTranslation(["ai"]);
 
-  const { messages, state, sendMessage, confirmCommand, cancelCommand } =
+  const { messages, state, sendMessage, confirmCommand, cancelCommand, abortResponse } =
     useAiChat();
 
   const [open, setOpen] = useState(false);
@@ -644,6 +644,7 @@ export function AiFloatingAssistant() {
 
   const panelHeight = Math.min(Dimensions.get("window").height * 0.72, 560);
 
+  const isAiResponding = state === "sending" || state === "streaming";
   const isAiActive =
     state === "sending" || state === "streaming" || state === "executing";
 
@@ -651,10 +652,17 @@ export function AiFloatingAssistant() {
     if (m.role === "user") {
       return (
         <View key={m.id} style={[styles.bubbleRow, styles.bubbleRowUser]}>
-          <View style={[styles.bubble, { backgroundColor: t.brand }]}>
-            <Text style={[styles.bubbleText, { color: t.surfaceElevated }]}>
-              {m.text}
-            </Text>
+          <View>
+            <View style={[styles.bubble, { backgroundColor: t.brand }]}>
+              <Text style={[styles.bubbleText, { color: t.surfaceElevated }]}>
+                {m.text}
+              </Text>
+            </View>
+            {m.cancelled && (
+              <Text style={[styles.cancelledLabel, { color: t.textMuted }]}>
+                （取消）
+              </Text>
+            )}
           </View>
         </View>
       );
@@ -801,9 +809,11 @@ export function AiFloatingAssistant() {
               <Text style={[styles.holdHint, { color: palette.muted }]}>
                 {holding
                   ? tr("ai:holdListening")
-                  : state === "sending" || state === "streaming"
-                    ? "AI 处理中..."
-                    : tr("ai:holdToSpeak")}
+                  : isAiResponding
+                    ? "点击取消"
+                    : state === "executing"
+                      ? "AI 处理中..."
+                      : tr("ai:holdToSpeak")}
               </Text>
               <View style={styles.waveRow}>
                 {Array.from({ length: BAR_COUNT }).map((_, i) => {
@@ -828,29 +838,42 @@ export function AiFloatingAssistant() {
 
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={tr("ai:voiceButtonA11y")}
-                onPressIn={startHold}
-                onPressOut={finalizeUtterance}
-                disabled={state === "sending" || state === "streaming"}
+                accessibilityLabel={
+                  isAiResponding ? "取消 AI 回答" : tr("ai:voiceButtonA11y")
+                }
+                onPressIn={isAiResponding ? undefined : startHold}
+                onPressOut={isAiResponding ? undefined : finalizeUtterance}
+                onPress={isAiResponding ? abortResponse : undefined}
                 style={({ pressed }) => [
                   styles.micOuter,
                   {
-                    borderColor: holding ? t.brand : palette.line,
+                    borderColor: holding
+                      ? t.brand
+                      : isAiResponding
+                        ? "#ef4444"
+                        : palette.line,
                     backgroundColor: holding
                       ? t.brandSelectedHighlight
                       : t.surfaceElevated,
                     transform: [{ scale: pressed || holding ? 1.04 : 1 }],
-                    opacity:
-                      state === "sending" || state === "streaming" ? 0.5 : 1,
                   },
                 ]}
               >
-                <Svg width={28} height={28} viewBox="0 0 24 24">
-                  <Path
-                    d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V20H9v2h6v-2h-2v-2.08A7 7 0 0 0 19 11h-2z"
-                    fill={t.brand}
-                  />
-                </Svg>
+                {isAiResponding ? (
+                  <Svg width={28} height={28} viewBox="0 0 24 24">
+                    <Path
+                      d="M6 4h4v16H6zm8 0h4v16h-4z"
+                      fill="#ef4444"
+                    />
+                  </Svg>
+                ) : (
+                  <Svg width={28} height={28} viewBox="0 0 24 24">
+                    <Path
+                      d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V20H9v2h6v-2h-2v-2.08A7 7 0 0 0 19 11h-2z"
+                      fill={t.brand}
+                    />
+                  </Svg>
+                )}
               </Pressable>
             </View>
           </View>
@@ -1032,5 +1055,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginTop: 4,
+  },
+  cancelledLabel: {
+    fontFamily: "Manrope_400Regular",
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 14,
+    opacity: 0.5,
   },
 });

@@ -8,6 +8,7 @@ openspec/
 !.env.example
 !.env.dev
 .DS_Store
+.mcp.json
 
 # build
 dist/

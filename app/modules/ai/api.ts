@@ -2,7 +2,7 @@ import EventSource from "react-native-sse";
 import { TEMPO_API_URL } from "../../core/config/tempoWebConfig";
 import type { AiMessage } from "./types";
 
-const DEFAULT_TIMEOUT = 120000;
+const DEFAULT_TIMEOUT = 300000;
 
 export type SseEvent = { event: string; data: unknown };
 
@@ -66,8 +66,13 @@ export function apiStream(
         handlers.onEvent({ event: "error", data: event.data });
       }
     } else {
+      const isTimeout = event.type === "timeout";
       handlers.onError(
-        new Error(event.message || "SSE connection error"),
+        new Error(
+          isTimeout
+            ? "请求处理时间较长，已超时。请简化请求后重试。"
+            : (event.message || "SSE connection error"),
+        ),
       );
     }
   });

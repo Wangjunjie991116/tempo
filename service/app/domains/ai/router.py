@@ -24,5 +24,6 @@ def chat_ai(payload: AiChatRequest, request: Request) -> StreamingResponse:
             "x-trace-id": trace_id,
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
         },
     )

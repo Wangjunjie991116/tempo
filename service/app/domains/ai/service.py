@@ -187,13 +187,6 @@ def _sse_ping() -> str:
     return ":ping\n\n"
 
 
-async def _heartbeat_loop(queue: asyncio.Queue[str | None], interval: float = 15.0) -> None:
-    """Send SSE ping comments periodically to keep connection alive."""
-    while True:
-        await asyncio.sleep(interval)
-        await queue.put(_sse_ping())
-
-
 def _extract_json(s: str) -> dict | None:
     """Extract the first JSON object from a string using raw_decode."""
     s = s.strip()
@@ -317,11 +310,10 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
             yield _sse_event("stage", {"stage": "understanding", "label": "正在理解你的意图..."})
         else:
             yield _sse_event("stage", {"stage": "thinking", "label": "正在规划最佳安排..."})
+        yield _sse_ping()  # flush headers immediately so client knows connection is alive
 
-        # Call LLM with tools and heartbeat
+        # Call LLM with tools and concurrent heartbeat
         client = _get_client()
-        queue: asyncio.Queue[str | None] = asyncio.Queue()
-        heartbeat_task = asyncio.create_task(_heartbeat_loop(queue))
 
         try:
             logger.info("calling_llm start")
@@ -334,7 +326,6 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
             )
             logger.info("calling_llm stream_created")
         except Exception as e:
-            heartbeat_task.cancel()
             logger.error("llm_error: %s", e)
             yield _sse_event("error", {"code": 10003, "message": f"LLM service unavailable: {str(e)}"})
             return
@@ -342,59 +333,77 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
         content_buffer = ""
         tool_calls: list[dict] = []
         chunk_count = 0
+        stream_done = asyncio.Event()
+        output_queue: asyncio.Queue[str | None] = asyncio.Queue()
+
+        async def _consume_stream():
+            nonlocal content_buffer, chunk_count
+            try:
+                async for chunk in stream:
+                    chunk_count += 1
+                    if not chunk.choices or len(chunk.choices) == 0:
+                        continue
+                    delta = chunk.choices[0].delta
+                    finish_reason = chunk.choices[0].finish_reason
+
+                    if delta and delta.content:
+                        content_buffer += delta.content
+                        await output_queue.put(_sse_event("thought", {"delta": delta.content}))
+
+                    if delta and delta.tool_calls:
+                        for tc_delta in delta.tool_calls:
+                            idx = tc_delta.index
+                            while len(tool_calls) <= idx:
+                                tool_calls.append({"id": "", "type": "function", "function": {"name": "", "arguments": ""}})
+                            if tc_delta.id:
+                                tool_calls[idx]["id"] = tc_delta.id
+                            if tc_delta.type:
+                                tool_calls[idx]["type"] = tc_delta.type
+                            if tc_delta.function:
+                                if tc_delta.function.name:
+                                    tool_calls[idx]["function"]["name"] = tc_delta.function.name
+                                if tc_delta.function.arguments:
+                                    tool_calls[idx]["function"]["arguments"] += tc_delta.function.arguments
+                            # Defensive: some proxies send flattened tool call fields
+                            if getattr(tc_delta, "name", None):
+                                tool_calls[idx]["function"]["name"] = tc_delta.name
+                            if getattr(tc_delta, "arguments", None):
+                                tool_calls[idx]["function"]["arguments"] += tc_delta.arguments
+
+                    if finish_reason == "tool_calls" or finish_reason == "stop":
+                        break
+            except Exception as e:
+                logger.error("stream_error: %s", e)
+                await output_queue.put(_sse_event("error", {"code": 10004, "message": f"流式传输中断: {str(e)}"}))
+            finally:
+                await output_queue.put(None)
+                stream_done.set()
+
+        async def _heartbeat():
+            while not stream_done.is_set():
+                try:
+                    await asyncio.wait_for(stream_done.wait(), timeout=15.0)
+                except asyncio.TimeoutError:
+                    if not stream_done.is_set():
+                        await output_queue.put(_sse_ping())
+
+        consumer_task = asyncio.create_task(_consume_stream())
+        heartbeat_task = asyncio.create_task(_heartbeat())
 
         try:
-            async for chunk in stream:
-                chunk_count += 1
-                if not chunk.choices or len(chunk.choices) == 0:
-                    continue
-
-                delta = chunk.choices[0].delta
-                finish_reason = chunk.choices[0].finish_reason
-
-                if delta and delta.content:
-                    content_buffer += delta.content
-                    yield _sse_event("thought", {"delta": delta.content})
-
-                if delta and delta.tool_calls:
-                    for tc_delta in delta.tool_calls:
-                        idx = tc_delta.index
-                        while len(tool_calls) <= idx:
-                            tool_calls.append({"id": "", "type": "function", "function": {"name": "", "arguments": ""}})
-                        if tc_delta.id:
-                            tool_calls[idx]["id"] = tc_delta.id
-                        if tc_delta.type:
-                            tool_calls[idx]["type"] = tc_delta.type
-                        if tc_delta.function:
-                            if tc_delta.function.name:
-                                tool_calls[idx]["function"]["name"] = tc_delta.function.name
-                            if tc_delta.function.arguments:
-                                tool_calls[idx]["function"]["arguments"] += tc_delta.function.arguments
-                        # Defensive: some proxies send flattened tool call fields
-                        if getattr(tc_delta, "name", None):
-                            tool_calls[idx]["function"]["name"] = tc_delta.name
-                        if getattr(tc_delta, "arguments", None):
-                            tool_calls[idx]["function"]["arguments"] += tc_delta.arguments
-
-                # Drain any pending pings so queue doesn't grow unbounded
-                while not queue.empty():
-                    ping = queue.get_nowait()
-                    if ping is not None:
-                        yield ping
-
-                if finish_reason == "tool_calls" or finish_reason == "stop":
+            while True:
+                item = await output_queue.get()
+                if item is None:
                     break
-        except Exception as e:
+                yield item
+        finally:
+            stream_done.set()
             heartbeat_task.cancel()
-            logger.error("stream_error: %s", e)
-            yield _sse_event("error", {"code": 10004, "message": f"流式传输中断: {str(e)}"})
-            return
-
-        heartbeat_task.cancel()
-        try:
-            await heartbeat_task
-        except asyncio.CancelledError:
-            pass
+            try:
+                await heartbeat_task
+            except asyncio.CancelledError:
+                pass
+            await consumer_task
 
         logger.info("stream_end chunks=%d content_length=%d tool_calls=%d", chunk_count, len(content_buffer), len(tool_calls))
 

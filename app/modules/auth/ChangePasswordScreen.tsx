@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { AUTH_STACK } from "../../core/navigation/routes";
 import type { AuthStackParamList } from "../../core/navigation/types";
-import { apiResetPassword } from "../../core/api/client";
+import { apiResetPassword } from "./api";
 import { AuthInput } from "./components/AuthInput";
 import { AuthButton } from "./components/AuthButton";
 import { PasswordRequirements } from "./components/PasswordRequirements";

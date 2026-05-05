@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { apiStream, type ChatRequest, type SseEvent } from "../../../core/api/client";
+import { apiStream, type ChatRequest, type SseEvent } from "../api";
 import { Toast } from "../../../core/ui";
 import {
   addScheduleItem,

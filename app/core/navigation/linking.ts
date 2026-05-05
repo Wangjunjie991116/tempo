@@ -2,7 +2,7 @@ import type { LinkingOptions } from "@react-navigation/native";
 import {
   AUTH_STACK,
   LINK_PATHS,
-  MAIN_TAB,
+  MAIN_STACK,
   ROOT_STACK,
   SCHEDULE_STACK,
   USER_STACK,
@@ -10,7 +10,7 @@ import {
 import type { RootStackParamList } from "./types";
 
 /**
- * Deep Link / Universal Link 配置：`tempo://` 与 `https://tempo.app` 前缀映射到根栈与各 Tab 路径。
+ * Deep Link / Universal Link 配置：`tempo://` 与 `https://tempo.app` 前缀映射到根栈与各主栈路径。
  *
  * @example
  * - 日程首页：`tempo://app/schedule`、`https://tempo.app/app/schedule`
@@ -34,15 +34,15 @@ export const tempoLinking: LinkingOptions<RootStackParamList> = {
       [ROOT_STACK.Main]: {
         path: LINK_PATHS.main,
         screens: {
-          [MAIN_TAB.Schedule]: {
+          [MAIN_STACK.Schedule]: {
             path: LINK_PATHS.schedule,
             screens: {
               [SCHEDULE_STACK.ScheduleHome]: "",
               [SCHEDULE_STACK.NotificationInbox]: "notifications",
             },
           },
-          [MAIN_TAB.Finance]: LINK_PATHS.finance,
-          [MAIN_TAB.User]: {
+          [MAIN_STACK.Finance]: LINK_PATHS.finance,
+          [MAIN_STACK.User]: {
             path: LINK_PATHS.user,
             screens: {
               [USER_STACK.UserHome]: "",

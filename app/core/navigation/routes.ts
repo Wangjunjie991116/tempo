@@ -15,10 +15,10 @@ export const AUTH_STACK = {
   ChangePassword: "ChangePassword",
 } as const;
 
-export const MAIN_TAB = {
-  Schedule: "ScheduleTab",
-  Finance: "FinanceTab",
-  User: "UserTab",
+export const MAIN_STACK = {
+  Schedule: "Schedule",
+  Finance: "Finance",
+  User: "User",
 } as const;
 
 export const SCHEDULE_STACK = {

@@ -154,13 +154,79 @@ function AiRobotOrbGraphic({ size }: { size: number }) {
 function StageIndicator({
   stage,
   color,
+  isActive = false,
 }: {
   stage: { stage: string; label: string };
   color: string;
+  isActive?: boolean;
 }) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!isActive) {
+      scaleAnim.setValue(1);
+      opacityAnim.setValue(1);
+      return;
+    }
+
+    const scaleLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.6,
+          duration: 600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    const opacityLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacityAnim, {
+          toValue: 0.4,
+          duration: 600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    scaleLoop.start();
+    opacityLoop.start();
+
+    return () => {
+      scaleLoop.stop();
+      opacityLoop.stop();
+      scaleAnim.setValue(1);
+      opacityAnim.setValue(1);
+    };
+  }, [isActive, scaleAnim, opacityAnim]);
+
   return (
     <View style={styles.stageRow}>
-      <View style={[styles.stageDot, { backgroundColor: color }]} />
+      <Animated.View
+        style={[
+          styles.stageDot,
+          {
+            backgroundColor: color,
+            transform: [{ scale: scaleAnim }],
+            opacity: opacityAnim,
+          },
+        ]}
+      />
       <Text style={[styles.stageText, { color }]}>{stage.label}</Text>
     </View>
   );
@@ -169,30 +235,23 @@ function StageIndicator({
 function ThinkingBubble({
   message,
   theme,
+  isActive,
 }: {
   message: Extract<ChatMessage, { type: "thinking" }>;
   theme: ReturnType<typeof useTempoTheme>;
+  isActive?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
   const hasThoughts = message.thoughts.length > 0;
   const currentStage = message.stages[message.stages.length - 1];
 
   return (
     <View style={styles.thinkingBubble}>
       {currentStage && (
-        <StageIndicator stage={currentStage} color={theme.textMuted} />
+        <StageIndicator stage={currentStage} color={theme.textMuted} isActive={isActive} />
       )}
       {hasThoughts && (
-        <Pressable onPress={() => setExpanded((v) => !v)}>
-          <Text style={[styles.thinkingToggle, { color: theme.textMuted }]}>
-            {expanded ? "收起思考过程 ▲" : "查看思考过程 ▼"}
-          </Text>
-        </Pressable>
-      )}
-      {expanded && hasThoughts && (
         <Text
           style={[styles.thinkingText, { color: theme.textMuted }]}
-          numberOfLines={expanded ? undefined : 2}
         >
           {message.thoughts}
         </Text>
@@ -326,8 +385,7 @@ export function AiFloatingAssistant() {
   const isReleasingRef = useRef(false);
   const releaseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const tabBarBump = Platform.OS === "ios" ? 52 : 58;
-  const fabBottom = Math.max(insets.bottom, 10) + tabBarBump + t.space.sm;
+  const fabBottom = Math.max(insets.bottom, 10) + t.space.lg;
 
   const palette = useMemo(
     () => ({
@@ -553,6 +611,9 @@ export function AiFloatingAssistant() {
 
   const panelHeight = Math.min(Dimensions.get("window").height * 0.72, 560);
 
+  const isAiActive =
+    state === "sending" || state === "streaming" || state === "executing";
+
   const renderMessage = (m: ChatMessage) => {
     if (m.role === "user") {
       return (
@@ -569,7 +630,7 @@ export function AiFloatingAssistant() {
     if (m.type === "thinking") {
       return (
         <View key={m.id} style={[styles.bubbleRow, styles.bubbleRowAssistant]}>
-          <ThinkingBubble message={m} theme={t} />
+          <ThinkingBubble message={m} theme={t} isActive={isAiActive} />
         </View>
       );
     }

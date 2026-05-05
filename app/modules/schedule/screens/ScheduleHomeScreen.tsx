@@ -16,12 +16,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useTranslation } from "../../../core/i18n";
-import { SCHEDULE_STACK } from "../../../core/navigation/routes";
+import { MAIN_STACK, SCHEDULE_STACK } from "../../../core/navigation/routes";
 import type { ScheduleStackParamList } from "../../../core/navigation/types";
 import { useTempoTheme } from "../../../core/theme";
 import { easeListTransition } from "../../../core/ui/layoutAnimation";
 import { DateStrip } from "../components/DateStrip";
 import { BellIcon } from "../components/icons/BellIcon";
+import { FinanceIcon } from "../components/icons/FinanceIcon";
 import { ScheduleDayPage } from "../components/ScheduleDayPage";
 import { useScheduleAllItems } from "../hooks/useScheduleAllItems";
 import type { ScheduleItem } from "../repo/types";
@@ -147,11 +148,17 @@ export default function ScheduleHomeScreen() {
     >
       <View style={[styles.headerBlock, { paddingHorizontal: t.space.lg }]}>
         <View style={styles.headerRow}>
-          <View
-            style={[styles.avatar, { backgroundColor: t.scheduleCardUpcoming }]}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={tr("common:userHomeTitle")}
+            onPress={() => navigation.getParent()?.navigate(MAIN_STACK.User)}
+            style={({ pressed }) => [
+              styles.avatar,
+              { backgroundColor: t.scheduleCardUpcoming, opacity: pressed ? 0.85 : 1 },
+            ]}
           >
             <Text style={[styles.avatarLetter, { color: t.brand }]}>G</Text>
-          </View>
+          </Pressable>
           <View style={styles.headerText}>
             <Text style={[styles.greetingHi, { color: t.textPrimary }]}>
               {tr("schedule:greetingHi", { name: "Gavin 👋" })}
@@ -160,6 +167,22 @@ export default function ScheduleHomeScreen() {
               {tr(scheduleGreetingI18nKey(getScheduleDayPhase()))}
             </Text>
           </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={tr("common:tabFinance")}
+            onPress={() => navigation.getParent()?.navigate(MAIN_STACK.Finance)}
+            android_ripple={
+              Platform.OS === "android"
+                ? { color: "rgba(96, 101, 230, 0.14)", borderless: true }
+                : undefined
+            }
+            style={({ pressed }) => [
+              styles.financeBtn,
+              { opacity: pressed ? 0.75 : 1 },
+            ]}
+          >
+            <FinanceIcon size={26} color={t.textPrimary} />
+          </Pressable>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={tr("notifications:inboxTitle")}
@@ -247,6 +270,9 @@ const styles = StyleSheet.create({
     fontFamily: "Manrope_600SemiBold",
     fontSize: 18,
     lineHeight: 26,
+  },
+  financeBtn: {
+    padding: 8,
   },
   bellBtn: {
     padding: 8,

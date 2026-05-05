@@ -51,10 +51,26 @@ Three independent subprojects under one repo:
 - **`web/`** — Vue 3 + Vite frontend. Built as static files, loaded inside the RN shell via `react-native-webview`.
 - **`service/`** — FastAPI backend. Currently mock parsing; designed to be replaced with real LLM calls later.
 
+### App Architecture (`app/`)
+
+The RN shell follows a **two-layer architecture** (`core + modules`):
+
+- **`core/`** — Shared infrastructure. Contains navigation, theme, UI primitives, API client config, i18n, and session management. **Must not import from `modules/`**.
+- **`modules/`** — Feature modules organized by business domain. Each module follows a standard internal structure:
+  ```
+  modules/<module>/
+  ├── screens/         ← Page-level components
+  ├── components/      ← Shared UI components within the module
+  ├── hooks/           ← Custom hooks (optional)
+  ├── navigation/      ← Sub-navigators (optional)
+  └── repo/            ← Data layer: storage, repository, types (optional)
+  ```
+  Create subdirectories only when they contain code. Empty directories are not allowed.
+
 ### Hybrid Shell + WebView
 
 The mobile app is **not** a pure RN app nor a pure web app. The RN shell (`app/`) provides:
-- Bottom tab navigation (`MainTabNavigator`)
+- Main stack navigation (`MainStackNavigator`)
 - Native modules (voice recognition, AsyncStorage, safe area)
 - A `WebView` that loads the Vue frontend
 

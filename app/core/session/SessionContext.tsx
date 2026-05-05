@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { apiLogin } from "../api/client";
+import { apiLogin } from "../../modules/auth/api";
 
 const AUTH_STORAGE_KEY = "tempo.auth_session";
 

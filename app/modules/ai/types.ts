@@ -53,7 +53,7 @@ export type StreamEvent =
   | { event: "error"; data: { code: number; message: string } };
 
 export type ChatMessage =
-  | { id: string; role: "user"; type: "user"; text: string }
+  | { id: string; role: "user"; type: "user"; text: string; cancelled?: boolean }
   | {
       id: string;
       role: "assistant";

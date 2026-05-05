@@ -57,6 +57,8 @@ export function useAiChat() {
   const pendingBatchRef = useRef<AiCommand[] | null>(null);
   const seqRef = useRef(0);
   const abortRef = useRef<(() => void) | null>(null);
+  const roundStartAiMessagesRef = useRef<AiMessage[]>([]);
+  const roundStartMessagesLengthRef = useRef(0);
 
   useEffect(() => {
     pendingCommandRef.current = pendingCommand;
@@ -76,6 +78,22 @@ export function useAiChat() {
       abortRef.current();
       abortRef.current = null;
     }
+  }, []);
+
+  const abortResponse = useCallback(() => {
+    if (abortRef.current) {
+      abortRef.current();
+      abortRef.current = null;
+    }
+    setAiMessages(roundStartAiMessagesRef.current);
+    setMessages((prev) =>
+      prev.map((m, idx) =>
+        idx === roundStartMessagesLengthRef.current - 1 && m.type === "user"
+          ? { ...m, cancelled: true }
+          : m,
+      ),
+    );
+    setState("idle");
   }, []);
 
   const executeCommand = useCallback(
@@ -282,9 +300,9 @@ export function useAiChat() {
         if (!id) {
           return "删除失败：缺少日程 ID 或定位描述。";
         }
-        const ok = await deleteScheduleItem(id);
-        return ok
-          ? `已删除日程。`
+        const deleted = await deleteScheduleItem(id);
+        return deleted
+          ? `✅已删除日程：${deleted.title}`
           : `删除失败：找不到 ID 为 ${id} 的日程。`;
       }
       default:
@@ -299,6 +317,8 @@ export function useAiChat() {
     currentRound: number,
     isContinuation: boolean,
   ) {
+    roundStartAiMessagesRef.current = [...currentAiMessages];
+    roundStartMessagesLengthRef.current = messages.length;
     if (!isContinuation) {
       resetState();
       const userMsg: ChatMessage = {
@@ -652,5 +672,6 @@ export function useAiChat() {
     confirmCommand,
     cancelCommand,
     clearMessages,
+    abortResponse,
   };
 }

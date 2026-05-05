@@ -213,6 +213,7 @@ function CommandCard({
   onCancel: () => void;
 }) {
   const { action, params, confidence } = message.command;
+  const batch = message.commands && message.commands.length > 0 ? message.commands : null;
   const actionLabels: Record<string, string> = {
     create_schedule: "创建日程",
     update_schedule: "更新日程",
@@ -229,7 +230,7 @@ function CommandCard({
       ]}
     >
       <Text style={[styles.commandTitle, { color: theme.textPrimary }]}>
-        {actionLabels[action] ?? action}
+        {batch ? `${actionLabels[action] ?? action} (${batch.length} 个)` : (actionLabels[action] ?? action)}
         {confidence < 0.7 && (
           <Text style={{ color: theme.textMuted, fontSize: 12 }}>
             {" "}
@@ -237,15 +238,30 @@ function CommandCard({
           </Text>
         )}
       </Text>
-      {typeof params.title === "string" && (
-        <Text style={[styles.commandDetail, { color: theme.textMuted }]}>
-          标题：{params.title}
-        </Text>
-      )}
-      {typeof params.start_at === "string" && (
-        <Text style={[styles.commandDetail, { color: theme.textMuted }]}>
-          时间：{params.start_at}
-        </Text>
+      {batch ? (
+        batch.map((cmd, i) => (
+          <View key={i} style={{ marginBottom: 2 }}>
+            {typeof cmd.params.title === "string" && (
+              <Text style={[styles.commandDetail, { color: theme.textMuted }]}>
+                • {cmd.params.title as string}
+                {typeof cmd.params.start_at === "string" && ` — ${cmd.params.start_at as string}`}
+              </Text>
+            )}
+          </View>
+        ))
+      ) : (
+        <>
+          {typeof params.title === "string" && (
+            <Text style={[styles.commandDetail, { color: theme.textMuted }]}>
+              标题：{params.title}
+            </Text>
+          )}
+          {typeof params.start_at === "string" && (
+            <Text style={[styles.commandDetail, { color: theme.textMuted }]}>
+              时间：{params.start_at}
+            </Text>
+          )}
+        </>
       )}
       <View style={styles.commandButtons}>
         <Pressable

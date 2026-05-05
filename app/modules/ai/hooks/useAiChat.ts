@@ -51,8 +51,10 @@ export function useAiChat() {
   const [state, setState] = useState<AiChatState>("idle");
   const [currentStage, setCurrentStage] = useState<AiStageLabel | null>(null);
   const [pendingCommand, setPendingCommand] = useState<AiCommand | null>(null);
+  const [pendingBatch, setPendingBatch] = useState<AiCommand[] | null>(null);
   const [roundCount, setRoundCount] = useState(0);
   const pendingCommandRef = useRef<AiCommand | null>(null);
+  const pendingBatchRef = useRef<AiCommand[] | null>(null);
   const seqRef = useRef(0);
   const abortRef = useRef<(() => void) | null>(null);
 
@@ -60,10 +62,15 @@ export function useAiChat() {
     pendingCommandRef.current = pendingCommand;
   }, [pendingCommand]);
 
+  useEffect(() => {
+    pendingBatchRef.current = pendingBatch;
+  }, [pendingBatch]);
+
   const resetState = useCallback(() => {
     setState("idle");
     setCurrentStage(null);
     setPendingCommand(null);
+    setPendingBatch(null);
     setRoundCount(0);
     if (abortRef.current) {
       abortRef.current();
@@ -198,7 +205,15 @@ export function useAiChat() {
             ? Date.parse(params.end_date as string)
             : undefined,
         });
-        return formatScheduleResult(items);
+        return JSON.stringify(
+          items.map((i) => ({
+            id: i.id,
+            title: i.title,
+            start_at: new Date(i.startAt).toISOString(),
+            end_at: i.endAt > 0 ? new Date(i.endAt).toISOString() : null,
+            tag: i.tag,
+          })),
+        );
       }
       case "create_schedule": {
         const startAt = params.start_at
@@ -293,7 +308,6 @@ export function useAiChat() {
         text: text.trim(),
       };
       setMessages((prev) => [...prev, userMsg]);
-      setAiMessages(currentAiMessages);
 
       const assistantMsg: ChatMessage = {
         id: assistantMsgId,
@@ -304,6 +318,7 @@ export function useAiChat() {
       };
       setMessages((prev) => [...prev, assistantMsg]);
     }
+    setAiMessages(currentAiMessages);
 
     setState("sending");
     setRoundCount(currentRound);
@@ -311,6 +326,7 @@ export function useAiChat() {
     try {
       let collectedAction: AiAction | null = null;
       let collectedCommand: AiCommand | null = null;
+      let collectedBatch = null as AiCommand[] | null;
       let hasStartedStreaming = false;
 
       console.log("[useAiChat] sending request:", text.trim(), "round:", currentRound);
@@ -357,18 +373,35 @@ export function useAiChat() {
               } else if (ev.event === "action") {
                 collectedAction = ev.data as AiAction;
               } else if (ev.event === "final") {
-                const cmd = (ev.data as { command: AiCommand }).command;
-                collectedCommand = cmd;
-                setMessages((prev) =>
-                  prev.map((m) =>
-                    m.id === assistantMsgId && m.type === "thinking"
-                      ? { ...m, command: cmd }
-                      : m,
-                  ),
-                );
+                const data = ev.data as { command?: AiCommand; commands?: AiCommand[] };
+                let cmd: AiCommand | null = null;
+                let batch: AiCommand[] | null = null;
+                if (data.commands && data.commands.length > 0) {
+                  cmd = data.commands[0];
+                  if (data.commands.length > 1) {
+                    batch = data.commands;
+                    console.log("[useAiChat] multiple commands received:", data.commands);
+                  }
+                } else if (data.command) {
+                  cmd = data.command;
+                }
+                if (cmd) {
+                  collectedCommand = cmd;
+                  collectedBatch = batch;
+                  setPendingBatch(batch);
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id === assistantMsgId && m.type === "thinking"
+                        ? { ...m, command: cmd, commands: batch ?? undefined }
+                        : m,
+                    ),
+                  );
+                }
               } else if (ev.event === "command") {
                 const cmd = ev.data as AiCommand;
                 collectedCommand = cmd;
+                collectedBatch = null;
+                setPendingBatch(null);
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.id === assistantMsgId && m.type === "thinking"
@@ -388,7 +421,7 @@ export function useAiChat() {
       });
 
       if (collectedAction) {
-        const action = collectedAction;
+        const action = collectedAction as AiAction;
 
         if (currentRound >= 2) {
           Toast.show({ type: "error", text1: "操作过于复杂，请分步说明" });
@@ -398,11 +431,31 @@ export function useAiChat() {
 
         const observation = await executeAction(action);
 
-        const assistantContent = `Thought: 执行工具 ${action.tool}\nAction: ${action.tool}\nAction Input: ${JSON.stringify(action.params)}\nObservation: ${observation}`;
+        const toolCallId = `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        const assistantMsg: AiMessage = {
+          role: "assistant",
+          content: "",
+          tool_calls: [
+            {
+              id: toolCallId,
+              type: "function",
+              function: {
+                name: action.tool,
+                arguments: JSON.stringify(action.params),
+              },
+            },
+          ],
+        };
+        const toolMsg: AiMessage = {
+          role: "tool",
+          content: observation,
+          tool_call_id: toolCallId,
+          name: action.tool,
+        };
         const newMessages: AiMessage[] = [
           ...currentAiMessages,
-          { role: "assistant", content: assistantContent },
-          { role: "user", content: `Observation: ${observation}` },
+          assistantMsg,
+          toolMsg,
         ];
 
         await processRound(text, newMessages, assistantMsgId, currentRound + 1, true);
@@ -410,7 +463,7 @@ export function useAiChat() {
       }
 
       if (collectedCommand) {
-        const cmd = collectedCommand;
+        const cmd = collectedCommand as AiCommand;
 
         if (cmd.confidence < 0.7) {
           setPendingCommand(cmd);
@@ -423,6 +476,7 @@ export function useAiChat() {
                     role: "assistant",
                     type: "command",
                     command: cmd,
+                    commands: collectedBatch ?? undefined,
                     confirmed: false,
                   }
                 : m,
@@ -442,6 +496,7 @@ export function useAiChat() {
                     role: "assistant",
                     type: "command",
                     command: cmd,
+                    commands: collectedBatch ?? undefined,
                     confirmed: false,
                   }
                 : m,
@@ -451,21 +506,45 @@ export function useAiChat() {
         }
 
         setState("executing");
-        const resultText = await executeCommand(cmd, assistantMsgId);
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantMsgId
-              ? {
-                  id: assistantMsgId,
-                  role: "assistant",
-                  type: "text",
-                  text: resultText,
-                }
-              : m,
-          ),
-        );
+        if (Array.isArray(collectedBatch) && collectedBatch.length > 0) {
+          const results: string[] = [];
+          for (const c of collectedBatch) {
+            const result = await executeCommand(c, assistantMsgId);
+            results.push(result);
+          }
+          const combinedText = results.join("\n");
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantMsgId
+                ? {
+                    id: assistantMsgId,
+                    role: "assistant",
+                    type: "text",
+                    text: combinedText,
+                  }
+                : m,
+            ),
+          );
+          setAiMessages((prev) => [...prev, { role: "assistant", content: combinedText }]);
+        } else {
+          const resultText = await executeCommand(cmd, assistantMsgId);
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantMsgId
+                ? {
+                    id: assistantMsgId,
+                    role: "assistant",
+                    type: "text",
+                    text: resultText,
+                  }
+                : m,
+            ),
+          );
+          setAiMessages((prev) => [...prev, { role: "assistant", content: resultText }]);
+        }
         setState("done");
       } else {
+        const fallbackText = "抱歉，我没有理解你的请求。";
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantMsgId
@@ -473,11 +552,12 @@ export function useAiChat() {
                   id: assistantMsgId,
                   role: "assistant",
                   type: "text",
-                  text: "抱歉，我没有理解你的请求。",
+                  text: fallbackText,
                 }
               : m,
           ),
         );
+        setAiMessages((prev) => [...prev, { role: "assistant", content: fallbackText }]);
         setState("done");
       }
     } catch (err) {
@@ -506,54 +586,87 @@ export function useAiChat() {
 
       const assistantMsgId = nextId("a", seqRef);
       const initialMessages: AiMessage[] = [
+        ...aiMessages,
         { role: "user", content: text.trim() },
       ];
 
       await processRound(text.trim(), initialMessages, assistantMsgId, 0, false);
     },
-    [state, resetState],
+    [state, resetState, aiMessages],
   );
 
   const confirmCommand = useCallback(async () => {
+    const batch = pendingBatchRef.current;
     const cmd = pendingCommandRef.current;
-    if (!cmd) return;
+    if (!cmd && (!batch || batch.length === 0)) return;
 
     setPendingCommand(null);
+    setPendingBatch(null);
+    pendingBatchRef.current = null;
     setState("executing");
 
-    const resultText = await executeCommand(cmd, "confirm");
-
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.type === "command" && m.command === cmd
-          ? {
-              id: m.id,
-              role: "assistant",
-              type: "text",
-              text: resultText,
-            }
-          : m,
-      ),
-    );
+    if (batch && batch.length > 0) {
+      const results: string[] = [];
+      for (const c of batch) {
+        const result = await executeCommand(c, "confirm");
+        results.push(result);
+      }
+      const combinedText = results.join("\n");
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.type === "command" &&
+          (m.command === cmd || (batch && m.commands === batch))
+            ? {
+                id: m.id,
+                role: "assistant",
+                type: "text",
+                text: combinedText,
+              }
+            : m,
+        ),
+      );
+      setAiMessages((prev) => [...prev, { role: "assistant", content: combinedText }]);
+    } else if (cmd) {
+      const resultText = await executeCommand(cmd, "confirm");
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.type === "command" && m.command === cmd
+            ? {
+                id: m.id,
+                role: "assistant",
+                type: "text",
+                text: resultText,
+              }
+            : m,
+        ),
+      );
+      setAiMessages((prev) => [...prev, { role: "assistant", content: resultText }]);
+    }
     setState("done");
   }, [executeCommand]);
 
   const cancelCommand = useCallback(() => {
     const cmd = pendingCommandRef.current;
+    const batch = pendingBatchRef.current;
+    const cancelText = "已取消操作。";
     setPendingCommand(null);
+    setPendingBatch(null);
+    pendingBatchRef.current = null;
     setState("idle");
     setMessages((prev) =>
       prev.map((m) =>
-        m.type === "command" && m.command === cmd
+        m.type === "command" &&
+        (m.command === cmd || (batch && m.commands === batch))
           ? {
               id: m.id,
               role: "assistant",
               type: "text",
-              text: "已取消操作。",
+              text: cancelText,
             }
           : m,
       ),
     );
+    setAiMessages((prev) => [...prev, { role: "assistant", content: cancelText }]);
   }, []);
 
   const clearMessages = useCallback(() => {

@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import re
@@ -33,12 +34,105 @@ def _get_client() -> AsyncOpenAI:
     return _client
 
 
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "parse_time",
+            "description": "Parse natural language time expressions like '明天下午3点'. Use this for ALL relative time references. Do NOT calculate time yourself.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "expression": {"type": "string", "description": "Natural language time expression, e.g. '明天下午3点'"},
+                    "timezone": {"type": "string", "description": "User timezone, e.g. Asia/Shanghai"},
+                    "reference_time": {"type": "string", "description": "ISO8601 datetime used as reference point"},
+                },
+                "required": ["expression", "timezone", "reference_time"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "query_schedule",
+            "description": "Query/search existing schedule items. ALWAYS use this first before update or delete when the exact id is unknown.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "keyword": {"type": "string", "description": "Keyword to search in schedule titles"},
+                    "start_date": {"type": "string", "description": "ISO8601 datetime (inclusive)"},
+                    "end_date": {"type": "string", "description": "ISO8601 datetime (inclusive)"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_schedule",
+            "description": "Create a new schedule item. Use when user mentions any future meeting, event, activity, plan, or schedule.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string"},
+                    "start_at": {"type": "string", "description": "ISO8601 datetime with timezone offset"},
+                    "end_at": {"type": "string", "description": "ISO8601 datetime with timezone offset"},
+                    "tag": {"type": "string", "enum": ["design_review", "workshop", "brainstorm"]},
+                    "all_day": {"type": "boolean"},
+                    "attendee_count": {"type": "integer"},
+                },
+                "required": ["title", "start_at", "tag"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "update_schedule",
+            "description": "Update an existing schedule item. ALWAYS call query_schedule first to obtain the exact id.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "Schedule ID obtained from a prior query_schedule result"},
+                    "title": {"type": "string"},
+                    "start_at": {"type": "string", "description": "ISO8601 datetime with timezone offset"},
+                    "end_at": {"type": "string", "description": "ISO8601 datetime with timezone offset"},
+                    "tag": {"type": "string", "enum": ["design_review", "workshop", "brainstorm"]},
+                    "status": {"type": "string", "enum": ["upcoming", "ongoing", "completed", "cancelled"]},
+                    "attendee_count": {"type": "integer"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "delete_schedule",
+            "description": "Delete a schedule item. ALWAYS call query_schedule first to obtain the exact id.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "string", "description": "Schedule ID obtained from a prior query_schedule result"},
+                },
+                "required": ["id"],
+            },
+        },
+    },
+]
+
+
+BACKEND_TOOLS = {"parse_time"}
+CLIENT_TRANSPARENT_TOOLS = {"query_schedule"}
+FINAL_TOOLS = {"create_schedule", "update_schedule", "delete_schedule"}
+
+
 def _build_system_prompt(request: AiChatRequest) -> str:
     now = datetime.now(timezone.utc).astimezone()
     tz = request.timezone or "UTC"
     locale = request.locale or "en"
     tags = request.context.get("availableTags", ["design_review", "workshop", "brainstorm"]) if request.context else ["design_review", "workshop", "brainstorm"]
 
+    today = now.strftime("%Y-%m-%d")
     tomorrow = (now + timedelta(days=1)).strftime("%Y-%m-%d")
     next_monday = (now + timedelta(days=(7 - now.weekday()) % 7 or 7)).strftime("%Y-%m-%d")
     next_sunday = (now + timedelta(days=(7 - now.weekday()) % 7 or 7) + timedelta(days=6)).strftime("%Y-%m-%d")
@@ -48,14 +142,49 @@ def _build_system_prompt(request: AiChatRequest) -> str:
         .replace("{timezone}", tz)
         .replace("{locale}", locale)
         .replace("{available_tags}", ", ".join(tags))
+        .replace("{today}", today)
         .replace("{tomorrow}", tomorrow)
         .replace("{next_monday}", next_monday)
         .replace("{next_sunday}", next_sunday)
     )
 
 
+def _convert_message(m: dict) -> dict:
+    """Convert an AiMessage dict to OpenAI-compatible message format."""
+    msg: dict = {"role": m.get("role", "user"), "content": m.get("content", "")}
+    tool_calls = m.get("tool_calls")
+    if tool_calls:
+        msg["tool_calls"] = [
+            {
+                "id": tc.get("id", ""),
+                "type": tc.get("type", "function"),
+                "function": {
+                    "name": tc.get("function", {}).get("name", ""),
+                    "arguments": tc.get("function", {}).get("arguments", ""),
+                },
+            }
+            for tc in tool_calls
+        ]
+    if m.get("tool_call_id"):
+        msg["tool_call_id"] = m["tool_call_id"]
+    if m.get("name"):
+        msg["name"] = m["name"]
+    return msg
+
+
 def _sse_event(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+def _sse_ping() -> str:
+    return ":ping\n\n"
+
+
+async def _heartbeat_loop(queue: asyncio.Queue[str | None], interval: float = 15.0) -> None:
+    """Send SSE ping comments periodically to keep connection alive."""
+    while True:
+        await asyncio.sleep(interval)
+        await queue.put(_sse_ping())
 
 
 def _extract_json(s: str) -> dict | None:
@@ -76,10 +205,15 @@ def _extract_json(s: str) -> dict | None:
 
 
 def _parse_xml_tool_call(text: str) -> dict | None:
-    """Parse <tool_call> XML format that some models output instead of ReAct.
+    """Parse XML tool call format (<invoke> or <tool_call>) that some models output instead of ReAct.
+    If multiple tools are present, only the first one is returned (ReAct is step-by-step).
     Returns {"type": "action", "thought": str, "action": str, "action_input": dict} or None.
     """
-    m = re.search(r"<tool_call\s+name=\"(\w+)\"\s*>(.*?)</tool_call>", text, re.DOTALL)
+    # Try <invoke name="..."> first (DeepSeek v4 format)
+    m = re.search(r"<invoke\s+name=\"(\w+)\"\s*>(.*?)</invoke>", text, re.DOTALL)
+    if not m:
+        # Fallback to <tool_call name="..."> format
+        m = re.search(r"<tool_call\s+name=\"(\w+)\"\s*>(.*?)</tool_call>", text, re.DOTALL)
     if not m:
         return None
 
@@ -87,9 +221,12 @@ def _parse_xml_tool_call(text: str) -> dict | None:
     inner = m.group(2)
 
     action_input: dict[str, str] = {}
-    for param_m in re.finditer(r"<parameter\s+name=\"([^\"]+)\"[^>]*>(.*?)</parameter>", inner, re.DOTALL):
-        key = param_m.group(1)
-        val = param_m.group(2).strip()
+    for param_m in re.finditer(r"<parameter\s+name=\"([^\"]+)\"([^>]*)/?>(.*?)</parameter>|"r"<parameter\s+name=\"([^\"]+)\"([^>]*)/?>", inner, re.DOTALL):
+        key = param_m.group(1) or param_m.group(4)
+        # Prefer value attribute over tag body
+        attr_block = param_m.group(2) or param_m.group(5) or ""
+        val_attr_m = re.search(r'value="([^"]*)"', attr_block)
+        val = val_attr_m.group(1) if val_attr_m else (param_m.group(3) or "").strip()
         action_input[key] = val
 
     if not action_input:
@@ -151,7 +288,7 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
 
     # Build messages
     if request.messages:
-        messages = [{"role": m.role, "content": m.content} for m in request.messages]
+        messages = [_convert_message(m.model_dump()) for m in request.messages]
         # Ensure system prompt is first
         if not messages or messages[0]["role"] != "system":
             messages.insert(0, {"role": "system", "content": system_prompt})
@@ -163,7 +300,6 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
 
     _log("messages_count", str(len(messages)))
 
-    # ReAct loop
     max_steps = 5
     for step in range(max_steps):
         _log("react_step", f"{step + 1}/{max_steps}")
@@ -174,23 +310,29 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
         else:
             yield _sse_event("stage", {"stage": "thinking", "label": "正在规划最佳安排..."})
 
-        # Call LLM
+        # Call LLM with tools and heartbeat
         client = _get_client()
+        queue: asyncio.Queue[str | None] = asyncio.Queue()
+        heartbeat_task = asyncio.create_task(_heartbeat_loop(queue))
+
         try:
             _log("calling_llm", "start")
             stream = await client.chat.completions.create(
                 model=model,
                 messages=messages,
+                tools=TOOLS,
                 stream=True,
                 temperature=0.3,
             )
             _log("calling_llm", "stream_created")
         except Exception as e:
+            heartbeat_task.cancel()
             _log("llm_error", str(e))
             yield _sse_event("error", {"code": 10003, "message": f"LLM service unavailable: {str(e)}"})
             return
 
-        buffer = ""
+        content_buffer = ""
+        tool_calls: list[dict] = []
         chunk_count = 0
 
         try:
@@ -198,63 +340,217 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
                 chunk_count += 1
                 if not chunk.choices or len(chunk.choices) == 0:
                     continue
-                delta = chunk.choices[0].delta
-                if delta is None or delta.content is None:
-                    continue
 
-                buffer += delta.content
-                yield _sse_event("thought", {"delta": delta.content})
+                delta = chunk.choices[0].delta
+                finish_reason = chunk.choices[0].finish_reason
+
+                if delta and delta.content:
+                    content_buffer += delta.content
+                    yield _sse_event("thought", {"delta": delta.content})
+
+                if delta and delta.tool_calls:
+                    for tc_delta in delta.tool_calls:
+                        idx = tc_delta.index
+                        while len(tool_calls) <= idx:
+                            tool_calls.append({"id": "", "type": "function", "function": {"name": "", "arguments": ""}})
+                        if tc_delta.id:
+                            tool_calls[idx]["id"] = tc_delta.id
+                        if tc_delta.type:
+                            tool_calls[idx]["type"] = tc_delta.type
+                        if tc_delta.function:
+                            if tc_delta.function.name:
+                                tool_calls[idx]["function"]["name"] = tc_delta.function.name
+                            if tc_delta.function.arguments:
+                                tool_calls[idx]["function"]["arguments"] += tc_delta.function.arguments
+                        # Defensive: some proxies send flattened tool call fields
+                        if getattr(tc_delta, "name", None):
+                            tool_calls[idx]["function"]["name"] = tc_delta.name
+                        if getattr(tc_delta, "arguments", None):
+                            tool_calls[idx]["function"]["arguments"] += tc_delta.arguments
+
+                # Drain any pending pings so queue doesn't grow unbounded
+                while not queue.empty():
+                    ping = queue.get_nowait()
+                    if ping is not None:
+                        yield ping
+
+                if finish_reason == "tool_calls" or finish_reason == "stop":
+                    break
         except Exception as e:
+            heartbeat_task.cancel()
             _log("stream_error", str(e))
             yield _sse_event("error", {"code": 10004, "message": f"流式传输中断: {str(e)}"})
             return
 
-        _log("stream_end", {"total_chunks": chunk_count, "buffer_length": len(buffer)})
+        heartbeat_task.cancel()
+        try:
+            await heartbeat_task
+        except asyncio.CancelledError:
+            pass
 
-        # Parse output
-        result = _parse_react_output(buffer)
-        _log("parsed_output", {"type": result["type"], "thought_preview": result.get("thought", "")[:200]})
+        _log("stream_end", {"total_chunks": chunk_count, "content_length": len(content_buffer), "tool_calls_count": len(tool_calls)})
 
-        if result["type"] == "final":
-            command = result.get("command", {})
-            action = command.get("action", "chat")
-            params = command.get("params", {})
-            confidence = float(command.get("confidence", 0.9))
+        # Handle tool_calls
+        valid_tool_calls = [tc for tc in tool_calls if tc.get("function", {}).get("name")]
+        _log("valid_tool_calls", {"count": len(valid_tool_calls), "names": [tc["function"]["name"] for tc in valid_tool_calls]})
 
-            cmd = AiCommand(action=action, params=params, confidence=confidence)
-            _log("final_command", cmd.model_dump())
+        # Defensive: log malformed tool_calls so we can diagnose provider issues
+        if not valid_tool_calls and tool_calls:
+            _log("malformed_tool_calls", {"raw": tool_calls})
 
-            yield _sse_event("stage", {"stage": "confirming", "label": "准备执行操作..."})
-            yield _sse_event("final", {"command": cmd.model_dump()})
-            yield _sse_event("done", {"traceId": trace_id, "needsContinuation": False})
-            return
+        if valid_tool_calls:
+            # Classify tool calls
+            backend_calls: list[tuple[dict, dict]] = []
+            transparent_calls: list[tuple[dict, dict]] = []
+            final_calls: list[tuple[str, dict]] = []
 
-        elif result["type"] == "action":
-            action_name = result["action"]
-            action_input = result.get("action_input", {})
-            thought = result.get("thought", "")
+            for tc in valid_tool_calls:
+                name = tc["function"]["name"]
+                try:
+                    args = json.loads(tc["function"]["arguments"])
+                except json.JSONDecodeError:
+                    args = {}
 
-            yield _sse_event("action", {"tool": action_name, "params": action_input})
+                if name in BACKEND_TOOLS:
+                    backend_calls.append((tc, args))
+                elif name in CLIENT_TRANSPARENT_TOOLS:
+                    transparent_calls.append((tc, args))
+                elif name in FINAL_TOOLS:
+                    final_calls.append((name, args))
+                else:
+                    _log("unknown_tool_skipped", name)
+
+            # Build assistant message with all tool_calls for context
+            assistant_msg = {
+                "role": "assistant",
+                "content": content_buffer or None,
+                "tool_calls": [{
+                    "id": tc["id"],
+                    "type": tc["type"],
+                    "function": {
+                        "name": tc["function"]["name"],
+                        "arguments": tc["function"]["arguments"],
+                    },
+                } for tc in valid_tool_calls],
+            }
+            messages.append(assistant_msg)
 
             # Execute backend tools internally
-            if action_name == "parse_time":
-                expression = action_input.get("expression", "")
-                tz = action_input.get("timezone", request.timezone or "UTC")
-                ref = action_input.get("reference_time", datetime.now(timezone.utc).isoformat())
-                parsed = parse_time(expression, tz, ref)
-                observation = parsed if parsed else "无法解析时间表达式"
+            for tc, args in backend_calls:
+                if tc["function"]["name"] == "parse_time":
+                    expression = args.get("expression", "")
+                    tz = args.get("timezone", request.timezone or "UTC")
+                    ref = args.get("reference_time", datetime.now(timezone.utc).isoformat())
+                    parsed = parse_time(expression, tz, ref)
+                    observation = parsed if parsed else "无法解析时间表达式"
 
-                # Add to messages for next iteration
-                assistant_content = f"{thought}\nAction: {action_name}\nAction Input: {json.dumps(action_input, ensure_ascii=False)}\nObservation: {observation}"
-                messages.append({"role": "assistant", "content": assistant_content})
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc["id"],
+                        "content": observation,
+                        "name": tc["function"]["name"],
+                    })
+
+            # If there are backend calls mixed with other calls, provide placeholder
+            # responses for the non-backend calls so conversation history stays valid,
+            # then continue to the next step.
+            if backend_calls and (transparent_calls or final_calls):
+                for tc, _args in (transparent_calls + final_calls):
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc["id"],
+                        "content": "此操作将在下一步执行",
+                        "name": tc["function"]["name"],
+                    })
                 continue  # Next step
 
-            # Client-side tools: end stream and wait for client to continue
-            else:
-                assistant_content = f"{thought}\nAction: {action_name}\nAction Input: {json.dumps(action_input, ensure_ascii=False)}"
-                messages.append({"role": "assistant", "content": assistant_content})
+            if backend_calls:
+                continue  # Next step
+
+            # Client-side transparent tool: end stream and wait for client to continue
+            if transparent_calls:
+                tc, args = transparent_calls[0]
+                yield _sse_event("action", {"tool": tc["function"]["name"], "params": args})
                 yield _sse_event("done", {"traceId": trace_id, "needsContinuation": True})
                 return
+
+            # Final tools: wrap as commands
+            if final_calls:
+                if len(final_calls) == 1:
+                    name, args = final_calls[0]
+                    cmd = AiCommand(action=name, params=args, confidence=0.95)
+                    _log("final_command", cmd.model_dump())
+                    yield _sse_event("stage", {"stage": "confirming", "label": "准备执行操作..."})
+                    yield _sse_event("final", {"command": cmd.model_dump()})
+                else:
+                    commands = [
+                        AiCommand(action=name, params=args, confidence=0.95).model_dump()
+                        for name, args in final_calls
+                    ]
+                    _log("final_commands", {"count": len(commands)})
+                    yield _sse_event("stage", {"stage": "confirming", "label": "准备执行操作..."})
+                    yield _sse_event("final", {"commands": commands})
+
+                yield _sse_event("done", {"traceId": trace_id, "needsContinuation": False})
+                return
+
+        # Fallback: try to parse content_buffer as ReAct / JSON
+        if content_buffer:
+            result = _parse_react_output(content_buffer)
+            _log("fallback_parse", {"type": result["type"], "thought_preview": result.get("thought", "")[:200]})
+
+            if result["type"] == "final":
+                command = result.get("command", {})
+                action = command.get("action", "chat")
+                params = command.get("params", {})
+                confidence = float(command.get("confidence", 0.9))
+                cmd = AiCommand(action=action, params=params, confidence=confidence)
+                _log("final_command", cmd.model_dump())
+
+                yield _sse_event("stage", {"stage": "confirming", "label": "准备执行操作..."})
+                yield _sse_event("final", {"command": cmd.model_dump()})
+                yield _sse_event("done", {"traceId": trace_id, "needsContinuation": False})
+                return
+
+            elif result["type"] == "action":
+                action_name = result["action"]
+                action_input = result.get("action_input", {})
+                thought = result.get("thought", "")
+
+                yield _sse_event("action", {"tool": action_name, "params": action_input})
+
+                if action_name == "parse_time":
+                    expression = action_input.get("expression", "")
+                    tz = action_input.get("timezone", request.timezone or "UTC")
+                    ref = action_input.get("reference_time", datetime.now(timezone.utc).isoformat())
+                    parsed = parse_time(expression, tz, ref)
+                    observation = parsed if parsed else "无法解析时间表达式"
+
+                    assistant_content = f"{thought}\nAction: {action_name}\nAction Input: {json.dumps(action_input, ensure_ascii=False)}\nObservation: {observation}"
+                    messages.append({"role": "assistant", "content": assistant_content})
+                    continue
+                else:
+                    assistant_content = f"{thought}\nAction: {action_name}\nAction Input: {json.dumps(action_input, ensure_ascii=False)}"
+                    messages.append({"role": "assistant", "content": assistant_content})
+                    yield _sse_event("done", {"traceId": trace_id, "needsContinuation": True})
+                    return
+
+        # Complete fallback
+        if tool_calls and not content_buffer:
+            fallback_text = "抱歉，我在理解您的请求时遇到了问题，请再试一次或换一种方式描述。"
+        else:
+            fallback_text = content_buffer or "有什么可以帮你的吗？"
+        command = {
+            "action": "chat",
+            "params": {"response": fallback_text},
+            "confidence": 1.0,
+        }
+        _log("final_command", command)
+
+        yield _sse_event("stage", {"stage": "confirming", "label": "准备执行操作..."})
+        yield _sse_event("final", {"command": command})
+        yield _sse_event("done", {"traceId": trace_id, "needsContinuation": False})
+        return
 
     # Max steps reached
     yield _sse_event("error", {"code": 10005, "message": "推理步骤过多，请简化请求"})

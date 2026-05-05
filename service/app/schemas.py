@@ -32,9 +32,18 @@ class AiChatContext(BaseModel):
     availableTags: Optional[list[str]] = None
 
 
+class AiToolCall(BaseModel):
+    id: str = ""
+    type: str = "function"
+    function: dict[str, Any] = Field(default_factory=dict)
+
+
 class AiMessage(BaseModel):
-    role: str = Field(..., description="One of: system, user, assistant")
-    content: str
+    role: str = Field(..., description="One of: system, user, assistant, tool")
+    content: str = ""
+    tool_calls: Optional[list[AiToolCall]] = None
+    tool_call_id: Optional[str] = None
+    name: Optional[str] = None
 
 
 class AiChatRequest(BaseModel):

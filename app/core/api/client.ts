@@ -4,7 +4,7 @@ import EventSource from "react-native-sse";
 import { TEMPO_API_URL } from "../config/tempoWebConfig";
 import type { AiMessage } from "../../modules/ai/types";
 
-const DEFAULT_TIMEOUT = 30000;
+const DEFAULT_TIMEOUT = 120000;
 
 const apiClient = axios.create({
   baseURL: TEMPO_API_URL,

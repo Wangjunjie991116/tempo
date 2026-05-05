@@ -23,7 +23,7 @@
         "NSSpeechRecognitionUsageDescription": "轻程将你的语音转为文字，以便日程助手理解你的口述内容。仅在你按住说话时处理。",
         "NSLocalNetworkUsageDescription": "轻程（Tempo）需要从你的 Mac 加载本地开发页面（WebView），请在提示时允许访问本地网络。"
       },
-      "bundleIdentifier": "com.anonymous.tempo"
+      "bundleIdentifier": "com.junjiewang.tempo"
     },
     "android": {
       "adaptiveIcon": {
@@ -32,11 +32,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "RECORD_AUDIO",
-        "android.permission.RECORD_AUDIO"
-      ],
-      "package": "com.anonymous.tempo"
+      "permissions": ["RECORD_AUDIO", "android.permission.RECORD_AUDIO"],
+      "package": "com.junjiewang.tempo"
     },
     "web": {
       "favicon": "./assets/tempo-icon.png"

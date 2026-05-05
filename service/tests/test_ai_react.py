@@ -53,6 +53,59 @@ def test_parse_xml_tool_call():
     assert result["action_input"]["timezone"] == "Asia/Shanghai"
 
 
+def test_parse_xml_tool_call():
+    text = """Thought: 需要解析时间
+<tool_call name="parse_time">
+<parameter name="expression" string="true">今天上午8:00</parameter>
+<parameter name="timezone" string="true">Asia/Shanghai</parameter>
+<parameter name="reference_time" string="true">2026-05-05T00:22:02+08:00</parameter>
+</tool_call>"""
+
+    result = _parse_react_output(text)
+    assert result["type"] == "action"
+    assert result["action"] == "parse_time"
+    assert result["action_input"]["expression"] == "今天上午8:00"
+    assert result["action_input"]["timezone"] == "Asia/Shanghai"
+
+
+def test_parse_invoke_tool_call():
+    """DeepSeek v4 outputs <invoke> instead of <tool_call>."""
+    text = """<tool-calls>
+<invoke name="query_schedule">
+<parameter name="keyword" string="true">发布会</parameter>
+<parameter name="start_date" string="true">2026-05-05T00:00:00+08:00</parameter>
+<parameter name="end_date" string="true">2026-05-05T23:59:59+08:00</parameter>
+</invoke>
+<invoke name="parse_time">
+<parameter name="expression" string="true">今天下午3:00</parameter>
+<parameter name="timezone" string="true">Asia/Shanghai</parameter>
+<parameter name="reference_time" string="true">2026-05-05T01:17:45+08:00</parameter>
+</invoke>
+</tool-calls>"""
+
+    result = _parse_react_output(text)
+    assert result["type"] == "action"
+    assert result["action"] == "query_schedule"
+    assert result["action_input"]["keyword"] == "发布会"
+    assert result["action_input"]["start_date"] == "2026-05-05T00:00:00+08:00"
+
+
+def test_parse_xml_tool_call_with_value_attr():
+    """Some models put parameter value in 'value' attribute with empty tag body."""
+    text = """Thought: 需要解析时间
+<tool_call name="parse_time">
+<parameter name="expression" value="今天下午4:00"></parameter>
+<parameter name="timezone" value="Asia/Shanghai"></parameter>
+<parameter name="reference_time" value="2026-05-05T10:00:00+08:00"></parameter>
+</tool_call>"""
+
+    result = _parse_react_output(text)
+    assert result["type"] == "action"
+    assert result["action"] == "parse_time"
+    assert result["action_input"]["expression"] == "今天下午4:00"
+    assert result["action_input"]["timezone"] == "Asia/Shanghai"
+
+
 def test_parse_empty_fallback():
     result = _parse_react_output("")
     assert result["type"] == "final"

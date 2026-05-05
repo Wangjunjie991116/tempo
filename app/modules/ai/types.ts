@@ -21,9 +21,21 @@ export type AiCommand = {
   confidence: number;
 };
 
+export type AiToolCall = {
+  id: string;
+  type: string;
+  function: {
+    name: string;
+    arguments: string;
+  };
+};
+
 export type AiMessage = {
-  role: "system" | "user" | "assistant";
+  role: "system" | "user" | "assistant" | "tool";
   content: string;
+  tool_calls?: AiToolCall[];
+  tool_call_id?: string;
+  name?: string;
 };
 
 export type AiAction = {
@@ -55,6 +67,7 @@ export type ChatMessage =
       role: "assistant";
       type: "command";
       command: AiCommand;
+      commands?: AiCommand[];
       confirmed: boolean;
     }
   | { id: string; role: "assistant"; type: "text"; text: string }

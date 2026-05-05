@@ -1,44 +1,31 @@
-import os
-import uuid
-
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
 
 load_dotenv()
-from fastapi.exceptions import RequestValidationError
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
-from app.routers import ai, schedule
-from app.schemas import ApiEnvelope
+from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
+
+from app.core.exceptions import (
+    AppException,
+    app_exception_handler,
+    generic_exception_handler,
+    validation_exception_handler,
+)
+from app.core.logging import setup_logging
+from app.core.middleware import add_cors_middleware, trace_middleware
+from app.domains import ai, auth, schedule
+
+setup_logging()
 
 app = FastAPI(title="Tempo Service")
 
+app.middleware("http")(trace_middleware)
+add_cors_middleware(app)
 
-@app.middleware("http")
-async def trace_middleware(request: Request, call_next):
-    trace_id = request.headers.get("x-trace-id") or str(uuid.uuid4())
-    request.state.trace_id = trace_id
-    response = await call_next(request)
-    response.headers["x-trace-id"] = trace_id
-    return response
-
-
-@app.exception_handler(RequestValidationError)
-async def validation_handler(request: Request, exc: RequestValidationError):
-    _ = exc
-    trace_id = getattr(request.state, "trace_id", str(uuid.uuid4()))
-    envelope = ApiEnvelope(code=10002, msg="invalid_request", data=None, traceId=trace_id)
-    return JSONResponse(status_code=200, content=envelope.model_dump())
-
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app.add_exception_handler(AppException, app_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+app.add_exception_handler(Exception, generic_exception_handler)
 
 app.include_router(schedule.router)
 app.include_router(ai.router)
+app.include_router(auth.router)

@@ -3,8 +3,8 @@ import uuid
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
-from app.schemas import AiChatRequest, ApiEnvelope
-from app.services.ai_orchestrator import stream_ai_response
+from app.domains.ai.schemas import AiChatRequest
+from app.domains.ai.service import stream_ai_response
 
 router = APIRouter(prefix="/api/v1/ai", tags=["ai"])
 

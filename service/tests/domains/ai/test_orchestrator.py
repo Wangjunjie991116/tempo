@@ -2,8 +2,8 @@ import json
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.schemas import AiChatRequest
-from app.services.ai_orchestrator import stream_ai_response
+from app.domains.ai.schemas import AiChatRequest
+from app.domains.ai.service import stream_ai_response
 
 
 class MockAsyncStream:
@@ -51,7 +51,7 @@ async def test_react_parse_time_internal_loop():
         MockAsyncStream([round2]),
     ])
 
-    with patch("app.services.ai_orchestrator._get_client", return_value=mock_client):
+    with patch("app.domains.ai.service._get_client", return_value=mock_client):
         request = AiChatRequest(text="明天下午3点开会")
         events = []
         async for event in stream_ai_response(request, "test-trace"):
@@ -93,7 +93,7 @@ async def test_react_client_action_query_schedule():
     mock_client = MagicMock()
     mock_client.chat.completions.create = AsyncMock(return_value=MockAsyncStream([chunk]))
 
-    with patch("app.services.ai_orchestrator._get_client", return_value=mock_client):
+    with patch("app.domains.ai.service._get_client", return_value=mock_client):
         request = AiChatRequest(text="帮我查一下设计评审会")
         events = []
         async for event in stream_ai_response(request, "test-trace"):

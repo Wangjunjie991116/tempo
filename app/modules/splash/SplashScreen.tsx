@@ -20,13 +20,14 @@ const SPLASH_FADE_MS = 420;
 type Props = NativeStackScreenProps<RootStackParamList, typeof ROOT_STACK.Splash>;
 
 export default function SplashScreen({ navigation }: Props) {
-  const { isAuthenticated } = useSession();
+  const { isAuthenticated, isLoading } = useSession();
   const { t } = useTranslation(["common"]);
   const splashOpacity = useRef(new Animated.Value(1)).current;
   const authRef = useRef(isAuthenticated);
   authRef.current = isAuthenticated;
 
   useEffect(() => {
+    if (isLoading) return;
     const timer = setTimeout(() => {
       Animated.timing(splashOpacity, {
         toValue: 0,
@@ -40,14 +41,12 @@ export default function SplashScreen({ navigation }: Props) {
             params: { screen: SCHEDULE_STACK.ScheduleHome },
           });
         } else {
-          navigation.replace(ROOT_STACK.Auth, {
-            screen: AUTH_STACK.Login,
-          });
+          navigation.replace(ROOT_STACK.Onboarding);
         }
       });
     }, SPLASH_VISIBLE_MS);
     return () => clearTimeout(timer);
-  }, [splashOpacity, navigation]);
+  }, [splashOpacity, navigation, isLoading]);
 
   return (
     <Animated.View

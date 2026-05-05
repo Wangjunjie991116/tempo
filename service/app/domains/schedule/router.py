@@ -1,16 +1,15 @@
-import uuid
+from fastapi import APIRouter, Depends, Request
 
-from fastapi import APIRouter, Request
-
-from app.schemas import ApiEnvelope, ParseRequest
-from app.services.mock_parse import mock_parse_schedule
+from app.core.schemas import ApiEnvelope
+from app.dependencies import get_trace_id
+from app.domains.schedule.schemas import ParseRequest
+from app.domains.schedule.service import mock_parse_schedule
 
 router = APIRouter(prefix="/api/v1/schedule", tags=["schedule"])
 
 
 @router.post("/parse", response_model=ApiEnvelope)
-def parse_schedule(payload: ParseRequest, request: Request) -> ApiEnvelope:
-    trace_id = getattr(request.state, "trace_id", str(uuid.uuid4()))
+def parse_schedule(payload: ParseRequest, request: Request, trace_id: str = Depends(get_trace_id)) -> ApiEnvelope:
     try:
         draft = mock_parse_schedule(payload.text, payload.timezone, payload.locale)
         return ApiEnvelope(code=0, msg="ok", data=draft, traceId=trace_id)

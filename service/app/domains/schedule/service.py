@@ -1,4 +1,4 @@
-from app.schemas import ScheduleDraft
+from app.domains.schedule.schemas import ScheduleDraft
 
 
 def mock_parse_schedule(text: str, timezone: str | None, locale: str | None) -> ScheduleDraft:

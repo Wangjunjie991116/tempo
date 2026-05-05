@@ -1,26 +1,19 @@
 import asyncio
 import json
-import os
+import logging
 import re
 from datetime import datetime, timedelta, timezone
 from typing import AsyncGenerator, Optional
 
 from openai import AsyncOpenAI
 
-from app.schemas import AiChatRequest, AiCommand, StreamEvent
-from app.services.prompt_templates import SYSTEM_PROMPT
-from app.services.time_parser import parse_time
-from app.services.web_search import search_web
+from app.core.config import settings
+from app.domains.ai.prompt_templates import SYSTEM_PROMPT
+from app.domains.ai.schemas import AiChatRequest, AiCommand
+from app.domains.ai.time_parser import parse_time
+from app.domains.ai.web_search import search_web
 
-
-def _log(label: str, data: dict | str | None = None) -> None:
-    prefix = "[ai-orchestrator]"
-    if data is None:
-        print(f"{prefix} {label}")
-    elif isinstance(data, str):
-        print(f"{prefix} {label}: {data}")
-    else:
-        print(f"{prefix} {label}: {json.dumps(data, ensure_ascii=False)}")
+logger = logging.getLogger(__name__)
 
 
 _client: Optional[AsyncOpenAI] = None
@@ -29,9 +22,7 @@ _client: Optional[AsyncOpenAI] = None
 def _get_client() -> AsyncOpenAI:
     global _client
     if _client is None:
-        base_url = os.getenv("OPENAI_BASE_URL", "https://gpt-agent.cc/v1")
-        api_key = os.getenv("OPENAI_API_KEY", "")
-        _client = AsyncOpenAI(base_url=base_url, api_key=api_key)
+        _client = AsyncOpenAI(base_url=settings.openai_base_url, api_key=settings.openai_api_key)
     return _client
 
 
@@ -237,7 +228,8 @@ def _parse_xml_tool_call(text: str) -> dict | None:
     inner = m.group(2)
 
     action_input: dict[str, str] = {}
-    for param_m in re.finditer(r"<parameter\s+name=\"([^\"]+)\"([^>]*)/?>(.*?)</parameter>|"r"<parameter\s+name=\"([^\"]+)\"([^>]*)/?>", inner, re.DOTALL):
+    for param_m in re.finditer(r"<parameter\s+name=\"([^\"]+)\"([^>]*)/?>(.*?)</parameter>|"
+        r"<parameter\s+name=\"([^\"]+)\"([^>]*)/?>", inner, re.DOTALL):
         key = param_m.group(1) or param_m.group(4)
         # Prefer value attribute over tag body
         attr_block = param_m.group(2) or param_m.group(5) or ""
@@ -298,9 +290,9 @@ def _parse_react_output(text: str) -> dict:
 
 async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGenerator[str, None]:
     system_prompt = _build_system_prompt(request)
-    model = os.getenv("OPENAI_MODEL", "deepseek-v4-pro")
+    model = settings.openai_model
 
-    _log("=== NEW REQUEST ===", {"trace_id": trace_id, "text": request.text, "model": model})
+    logger.info("=== NEW REQUEST === trace_id=%s text=%s model=%s", trace_id, request.text, model)
 
     # Build messages
     if request.messages:
@@ -314,11 +306,11 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
             {"role": "user", "content": request.text},
         ]
 
-    _log("messages_count", str(len(messages)))
+    logger.info("messages_count=%d", len(messages))
 
     max_steps = 5
     for step in range(max_steps):
-        _log("react_step", f"{step + 1}/{max_steps}")
+        logger.info("react_step=%d/%d", step + 1, max_steps)
 
         # Stage
         if step == 0:
@@ -332,7 +324,7 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
         heartbeat_task = asyncio.create_task(_heartbeat_loop(queue))
 
         try:
-            _log("calling_llm", "start")
+            logger.info("calling_llm start")
             stream = await client.chat.completions.create(
                 model=model,
                 messages=messages,
@@ -340,10 +332,10 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
                 stream=True,
                 temperature=0.3,
             )
-            _log("calling_llm", "stream_created")
+            logger.info("calling_llm stream_created")
         except Exception as e:
             heartbeat_task.cancel()
-            _log("llm_error", str(e))
+            logger.error("llm_error: %s", e)
             yield _sse_event("error", {"code": 10003, "message": f"LLM service unavailable: {str(e)}"})
             return
 
@@ -394,7 +386,7 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
                     break
         except Exception as e:
             heartbeat_task.cancel()
-            _log("stream_error", str(e))
+            logger.error("stream_error: %s", e)
             yield _sse_event("error", {"code": 10004, "message": f"流式传输中断: {str(e)}"})
             return
 
@@ -404,16 +396,16 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
         except asyncio.CancelledError:
             pass
 
-        _log("stream_end", {"total_chunks": chunk_count, "content_length": len(content_buffer), "tool_calls_count": len(tool_calls)})
+        logger.info("stream_end chunks=%d content_length=%d tool_calls=%d", chunk_count, len(content_buffer), len(tool_calls))
 
         # Handle tool_calls
         valid_tool_calls = [tc for tc in tool_calls if tc.get("function", {}).get("name")]
-        _log("valid_tool_calls", {"count": len(valid_tool_calls), "names": [tc["function"]["name"] for tc in valid_tool_calls]})
+        logger.info("valid_tool_calls count=%d names=%s", len(valid_tool_calls), [tc["function"]["name"] for tc in valid_tool_calls])
 
         # Defensive: log malformed or filtered tool_calls so we can diagnose provider issues
         malformed = [tc for tc in tool_calls if not tc.get("function", {}).get("name")]
         if malformed:
-            _log("malformed_tool_calls", {"filtered_count": len(malformed), "raw": malformed})
+            logger.warning("malformed_tool_calls filtered=%d raw=%s", len(malformed), malformed)
 
         if valid_tool_calls:
             # Classify tool calls
@@ -435,7 +427,7 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
                 elif name in FINAL_TOOLS:
                     final_calls.append((name, args))
                 else:
-                    _log("unknown_tool_skipped", name)
+                    logger.warning("unknown_tool_skipped: %s", name)
 
             # Build assistant message with all tool_calls for context
             assistant_msg = {
@@ -471,7 +463,7 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
                     query = args.get("query", "")
                     num_results = min(max(args.get("num_results", 3), 1), 5)
                     observation = search_web(query, num_results)
-                    _log("search_web_observation", {"query": query, "length": len(observation), "preview": observation[:200]})
+                    logger.info("search_web_observation query=%s length=%d preview=%s", query, len(observation), observation[:200])
 
                     # Defensive: prevent search loops by nudging the LLM if it keeps searching
                     search_count = sum(
@@ -516,7 +508,7 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
                 if len(final_calls) == 1:
                     name, args = final_calls[0]
                     cmd = AiCommand(action=name, params=args, confidence=0.95)
-                    _log("final_command", cmd.model_dump())
+                    logger.info("final_command: %s", cmd.model_dump())
                     yield _sse_event("stage", {"stage": "confirming", "label": "准备执行操作..."})
                     yield _sse_event("final", {"command": cmd.model_dump()})
                 else:
@@ -524,7 +516,7 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
                         AiCommand(action=name, params=args, confidence=0.95).model_dump()
                         for name, args in final_calls
                     ]
-                    _log("final_commands", {"count": len(commands)})
+                    logger.info("final_commands count=%d", len(commands))
                     yield _sse_event("stage", {"stage": "confirming", "label": "准备执行操作..."})
                     yield _sse_event("final", {"commands": commands})
 
@@ -534,7 +526,7 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
         # Fallback: try to parse content_buffer as ReAct / JSON
         if content_buffer:
             result = _parse_react_output(content_buffer)
-            _log("fallback_parse", {"type": result["type"], "thought_preview": result.get("thought", "")[:200]})
+            logger.info("fallback_parse type=%s thought_preview=%s", result["type"], result.get("thought", "")[:200])
 
             if result["type"] == "final":
                 command = result.get("command", {})
@@ -542,7 +534,7 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
                 params = command.get("params", {})
                 confidence = float(command.get("confidence", 0.9))
                 cmd = AiCommand(action=action, params=params, confidence=confidence)
-                _log("final_command", cmd.model_dump())
+                logger.info("final_command: %s", cmd.model_dump())
 
                 yield _sse_event("stage", {"stage": "confirming", "label": "准备执行操作..."})
                 yield _sse_event("final", {"command": cmd.model_dump()})
@@ -590,7 +582,7 @@ async def stream_ai_response(request: AiChatRequest, trace_id: str) -> AsyncGene
             "params": {"response": fallback_text},
             "confidence": 1.0,
         }
-        _log("final_command", command)
+        logger.info("final_command: %s", command)
 
         yield _sse_event("stage", {"stage": "confirming", "label": "准备执行操作..."})
         yield _sse_event("final", {"command": command})

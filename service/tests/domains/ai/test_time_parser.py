@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime
-from app.services.time_parser import parse_time
+from app.domains.ai.time_parser import parse_time
 
 
 def test_parse_tonight():

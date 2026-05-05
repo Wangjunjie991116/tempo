@@ -21,10 +21,14 @@ export const tempoLinking: LinkingOptions<RootStackParamList> = {
   config: {
     screens: {
       [ROOT_STACK.Splash]: LINK_PATHS.splash,
+      [ROOT_STACK.Onboarding]: "onboarding",
       [ROOT_STACK.Auth]: {
         path: LINK_PATHS.auth,
         screens: {
           [AUTH_STACK.Login]: "",
+          [AUTH_STACK.SignUp]: "signup",
+          [AUTH_STACK.ForgotPassword]: "forgot-password",
+          [AUTH_STACK.ChangePassword]: "change-password",
         },
       },
       [ROOT_STACK.Main]: {

@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from app.services.web_search import search_web
+from app.domains.ai.web_search import search_web
 
 
 def test_search_web_success():
@@ -9,7 +9,7 @@ def test_search_web_success():
         {"title": "G4 高铁时刻表", "body": "G4 上海虹桥-北京南 15:00-19:36"},
     ]
 
-    with patch("app.services.web_search.DDGS") as MockDDGS:
+    with patch("app.domains.ai.web_search.DDGS") as MockDDGS:
         instance = MagicMock()
         instance.text.return_value = mock_results
         MockDDGS.return_value.__enter__.return_value = instance
@@ -23,7 +23,7 @@ def test_search_web_success():
 
 
 def test_search_web_no_results():
-    with patch("app.services.web_search.DDGS") as MockDDGS:
+    with patch("app.domains.ai.web_search.DDGS") as MockDDGS:
         instance = MagicMock()
         instance.text.return_value = []
         MockDDGS.return_value.__enter__.return_value = instance
@@ -33,7 +33,7 @@ def test_search_web_no_results():
 
 
 def test_search_web_error():
-    with patch("app.services.web_search.DDGS") as MockDDGS:
+    with patch("app.domains.ai.web_search.DDGS") as MockDDGS:
         instance = MagicMock()
         instance.text.side_effect = Exception("Rate limit")
         MockDDGS.return_value.__enter__.return_value = instance

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Dimensions,
+  Keyboard,
   Platform,
   Pressable,
   ScrollView,
@@ -10,6 +11,7 @@ import {
   Text,
 } from "react-native";
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -25,6 +27,11 @@ const MAX_LINES = 4;
 const MIN_HEIGHT = LINE_HEIGHT * MIN_LINES + 28;
 const MAX_HEIGHT = LINE_HEIGHT * MAX_LINES + 28;
 
+/** 气泡底缘与键盘顶缘之间的呼吸距离（默认取 space.md = 16）。 */
+const DEFAULT_KEYBOARD_GAP = 16;
+/** iOS 键盘缓动曲线的近似（减速感更强，匹配系统气韵）。 */
+const KEYBOARD_EASING = Easing.bezier(0.17, 0.59, 0.4, 0.77);
+
 export type VoiceBubbleProps = {
   visible: boolean;
   text: string;
@@ -38,6 +45,8 @@ export type VoiceBubbleProps = {
     brand: string;
     divider: string;
   };
+  /** 气泡底缘与键盘顶缘之间的空隙，单位 px；默认 `DEFAULT_KEYBOARD_GAP` (16)。 */
+  keyboardGap?: number;
 };
 
 function CancelIcon({ color }: { color: string }) {
@@ -76,13 +85,22 @@ export function VoiceBubble({
   onSend,
   onCancel,
   theme,
+  keyboardGap = DEFAULT_KEYBOARD_GAP,
 }: VoiceBubbleProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editableText, setEditableText] = useState(text);
   const inputRef = useRef<TextInput>(null);
+  const containerRef = useRef<View>(null);
   const bubbleOpacity = useSharedValue(0);
   const bubbleScale = useSharedValue(0.85);
   const bubbleTranslateY = useSharedValue(20);
+  /** 键盘抬起时 translateY 的叠加位移（负值代表向上抬升）。 */
+  const keyboardLift = useSharedValue(0);
+  /**
+   * 缓存气泡"未被键盘抬起时"的屏幕底缘。避免键盘已抬起时 measure 拿到的
+   * 是已位移后的位置，导致二次计算出错。
+   */
+  const restBottomRef = useRef<number | null>(null);
 
   useEffect(() => {
     setEditableText(text);
@@ -97,9 +115,68 @@ export function VoiceBubble({
       bubbleOpacity.value = withTiming(0, { duration: 150 });
       bubbleScale.value = withTiming(0.85, { duration: 150 });
       bubbleTranslateY.value = withTiming(20, { duration: 150 });
+      keyboardLift.value = withTiming(0, { duration: 150 });
+      restBottomRef.current = null;
       setIsEditing(false);
     }
-  }, [visible, bubbleOpacity, bubbleScale, bubbleTranslateY]);
+  }, [visible, bubbleOpacity, bubbleScale, bubbleTranslateY, keyboardLift]);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    /**
+     * 根据键盘"目标 frame"重新计算并动画抬升量。
+     * - `keyboardScreenY` 即键盘顶缘在屏幕中的 y 坐标（iOS `keyboardWillChangeFrame`
+     *   的 `endCoordinates.screenY` 给出），键盘隐藏时该值等于屏幕高度。
+     * - Android 回退到 `windowHeight - endCoordinates.height`。
+     */
+    const animateToKeyboardTop = (keyboardScreenY: number, duration: number) => {
+      // 仅在有确定 rest 底缘时可算；首次事件会在 measure 回调内填好。
+      const restBottom = restBottomRef.current;
+      if (restBottom == null) return;
+      const overflow = restBottom + keyboardGap - keyboardScreenY;
+      const target = overflow > 0 ? -overflow : 0;
+      keyboardLift.value = withTiming(target, { duration, easing: KEYBOARD_EASING });
+    };
+
+    /** 首次事件时，用 measureInWindow 取气泡当前屏幕底缘并减去已有抬升量，得到 rest 底缘。 */
+    const ensureRestMeasured = (onReady: () => void) => {
+      if (restBottomRef.current != null) {
+        onReady();
+        return;
+      }
+      containerRef.current?.measureInWindow((_x, y, _w, h) => {
+        restBottomRef.current = y + h - keyboardLift.value;
+        onReady();
+      });
+    };
+
+    if (Platform.OS === "ios") {
+      // 单一事件源：IME 同尺寸切换（9 键 ↔ 26 键）不会触发 change-frame，天然避免 hide→show 伪切换。
+      const sub = Keyboard.addListener("keyboardWillChangeFrame", (e) => {
+        const endY = e.endCoordinates?.screenY;
+        if (endY == null) return;
+        const duration = (e as unknown as { duration?: number }).duration ?? 250;
+        ensureRestMeasured(() => animateToKeyboardTop(endY, duration));
+      });
+      return () => sub.remove();
+    }
+
+    // Android：没有 will-change-frame，用 did-show / did-hide。
+    const windowHeight = Dimensions.get("window").height;
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
+      const kbHeight = e.endCoordinates?.height ?? 0;
+      if (kbHeight <= 0) return;
+      ensureRestMeasured(() => animateToKeyboardTop(windowHeight - kbHeight, 220));
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      ensureRestMeasured(() => animateToKeyboardTop(windowHeight, 200));
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [visible, keyboardGap, keyboardLift]);
 
   const handleBubblePress = useCallback(() => {
     if (mode === "preview" && !isEditing) {
@@ -119,14 +196,14 @@ export function VoiceBubble({
     opacity: bubbleOpacity.value,
     transform: [
       { scale: bubbleScale.value },
-      { translateY: bubbleTranslateY.value },
+      { translateY: bubbleTranslateY.value + keyboardLift.value },
     ],
   }));
 
   if (!visible) return null;
 
   return (
-    <Animated.View style={[styles.container, animatedStyle]}>
+    <Animated.View ref={containerRef} style={[styles.container, animatedStyle]}>
       {Platform.OS === "ios" ? (
         <BlurView
           intensity={40}

@@ -595,7 +595,7 @@ export function AiFloatingAssistant() {
   }, [tr]);
 
   const startHold = useCallback(async () => {
-    if (state !== "idle") return;
+    if (state === "sending" || state === "streaming" || state === "executing") return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     isReleasingRef.current = false;
     if (releaseTimeoutRef.current) {
@@ -824,10 +824,10 @@ export function AiFloatingAssistant() {
                   ? "松开发送"
                   : voiceState === "preview"
                     ? "点击气泡可编辑"
-                    : isAiResponding
-                      ? "点击取消"
-                      : state === "executing"
-                        ? "AI 处理中..."
+                    : state === "executing"
+                      ? "AI 处理中..."
+                      : isAiResponding
+                        ? ""
                         : tr("ai:holdToSpeak")}
               </Text>
               <View style={styles.waveRow}>
@@ -869,7 +869,32 @@ export function AiFloatingAssistant() {
                 />
               )}
 
-              {state === "idle" ? (
+              {state === "sending" || state === "streaming" || state === "executing" ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="取消 AI 回答"
+                  onPress={abortResponse}
+                  style={({ pressed }) => [
+                    styles.micOuter,
+                    {
+                      borderColor: "#ef4444",
+                      backgroundColor: t.surfaceElevated,
+                      transform: [{ scale: pressed ? 1.06 : 1 }],
+                      shadowColor: "#ef4444",
+                      shadowOpacity: 0.25,
+                      shadowRadius: 12,
+                      elevation: 6,
+                    },
+                  ]}
+                >
+                  <Svg width={28} height={28} viewBox="0 0 24 24">
+                    <Path
+                      d="M6 4h4v16H6zm8 0h4v16h-4z"
+                      fill="#ef4444"
+                    />
+                  </Svg>
+                </Pressable>
+              ) : (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={tr("ai:voiceButtonA11y")}
@@ -896,42 +921,6 @@ export function AiFloatingAssistant() {
                       fill={voiceState === "recording" ? t.brand : `${t.brand}cc`}
                     />
                   </Svg>
-                </Pressable>
-              ) : (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    isAiResponding ? "取消 AI 回答" : tr("ai:voiceButtonA11y")
-                  }
-                  onPress={isAiResponding ? abortResponse : undefined}
-                  style={({ pressed }) => [
-                    styles.micOuter,
-                    {
-                      borderColor: isAiResponding ? "#ef4444" : "rgba(120,120,140,0.2)",
-                      backgroundColor: t.surfaceElevated,
-                      transform: [{ scale: pressed ? 1.06 : 1 }],
-                      shadowColor: isAiResponding ? "#ef4444" : "#000",
-                      shadowOpacity: isAiResponding ? 0.25 : 0.08,
-                      shadowRadius: isAiResponding ? 12 : 8,
-                      elevation: isAiResponding ? 6 : 4,
-                    },
-                  ]}
-                >
-                  {isAiResponding ? (
-                    <Svg width={28} height={28} viewBox="0 0 24 24">
-                      <Path
-                        d="M6 4h4v16H6zm8 0h4v16h-4z"
-                        fill="#ef4444"
-                      />
-                    </Svg>
-                  ) : (
-                    <Svg width={28} height={28} viewBox="0 0 24 24">
-                      <Path
-                        d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V20H9v2h6v-2h-2v-2.08A7 7 0 0 0 19 11h-2z"
-                        fill={`${t.brand}cc`}
-                      />
-                    </Svg>
-                  )}
                 </Pressable>
               )}
             </View>

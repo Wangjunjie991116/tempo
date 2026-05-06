@@ -33,17 +33,7 @@ import { useTempoTheme } from "../../../core/theme";
 import { Toast, ToastRenderer } from "../../../core/ui";
 import { useAiChat } from "../hooks/useAiChat";
 import type { ChatMessage } from "../types";
-import {
-  Gesture,
-  GestureDetector,
-} from "react-native-gesture-handler";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from "react-native-reanimated";
-import { VoiceEditPanel } from "./VoiceEditPanel";
+import { VoiceBubble } from "./VoiceBubble";
 
 const BAR_COUNT = 21;
 
@@ -409,18 +399,11 @@ export function AiFloatingAssistant() {
     useAiChat();
 
   const [open, setOpen] = useState(false);
-  type VoiceState = "idle" | "recording" | "editing";
+  type VoiceState = "idle" | "recording" | "preview";
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [waveTick, setWaveTick] = useState(0);
   const [liveVol, setLiveVol] = useState(0.12);
-
-  const [activeZone, setActiveZone] = useState<"cancel" | "text" | null>(null);
-  const [editText, setEditText] = useState("");
-  const micLayoutRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
-  const zoneOpacityCancel = useSharedValue(0);
-  const zoneOpacityText = useSharedValue(0);
-  const zoneScaleCancel = useSharedValue(0.8);
-  const zoneScaleText = useSharedValue(0.8);
+  const [transcript, setTranscript] = useState("");
 
   const transcriptRef = useRef("");
   const volumeNormRef = useRef(0.15);
@@ -446,23 +429,6 @@ export function AiFloatingAssistant() {
       line: t.divider,
     }),
     [t.brand, t.divider, t.surfaceElevated, t.textMuted],
-  );
-
-  const getGestureZone = useCallback(
-    (absX: number, absY: number): "cancel" | "text" | null => {
-      const { x, y, width, height } = micLayoutRef.current;
-      const centerX = x + width / 2;
-      const centerY = y + height / 2;
-      const dx = absX - centerX;
-      const dy = absY - centerY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 40) return null;
-      const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-      if (angle >= -60 && angle <= 0 && dy < 0) return "text";
-      if (angle >= -180 && angle <= -120 && dy < 0) return "cancel";
-      return null;
-    },
-    [],
   );
 
   const appendAssistantIntro = useCallback(() => {
@@ -534,13 +500,17 @@ export function AiFloatingAssistant() {
 
     Voice.onSpeechResults = (e) => {
       const phrase = e.value?.[0];
-      if (phrase && phrase.trim().length > 0)
+      if (phrase && phrase.trim().length > 0) {
         transcriptRef.current = phrase.trim();
+        setTranscript(phrase.trim());
+      }
     };
     Voice.onSpeechPartialResults = (e) => {
       const phrase = e.value?.[0];
-      if (phrase && phrase.trim().length > 0)
+      if (phrase && phrase.trim().length > 0) {
         transcriptRef.current = phrase.trim();
+        setTranscript(phrase.trim());
+      }
     };
     Voice.onSpeechVolumeChanged = (e) => {
       volumeNormRef.current = normalizeSpeechVolume(e.value);
@@ -553,7 +523,7 @@ export function AiFloatingAssistant() {
           clearTimeout(releaseTimeoutRef.current);
           releaseTimeoutRef.current = null;
         }
-        void finalizeUtterance(null);
+        void finalizeUtterance();
       }
     };
     Voice.onSpeechError = (e) => {
@@ -595,43 +565,34 @@ export function AiFloatingAssistant() {
     });
   }, [messages, open]);
 
-  const finalizeUtterance = useCallback(
-    async (zone: "cancel" | "text" | null) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      isReleasingRef.current = true;
-      if (releaseTimeoutRef.current) {
-        clearTimeout(releaseTimeoutRef.current);
-        releaseTimeoutRef.current = null;
-      }
+  const finalizeUtterance = useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    isReleasingRef.current = true;
+    if (releaseTimeoutRef.current) {
+      clearTimeout(releaseTimeoutRef.current);
+      releaseTimeoutRef.current = null;
+    }
+    volumeNormRef.current = 0.12;
+    setLiveVol(0.12);
+    await Voice.stop().catch(() => undefined);
+    const text = transcriptRef.current.trim();
+    const duration = Date.now() - holdStartTimeRef.current;
+
+    if (!text) {
       setVoiceState("idle");
-      setActiveZone(null);
-      volumeNormRef.current = 0.12;
-      setLiveVol(0.12);
-      await Voice.stop().catch(() => undefined);
-      const text = transcriptRef.current.trim();
-      const duration = Date.now() - holdStartTimeRef.current;
       transcriptRef.current = "";
-      if (zone === "cancel") {
-        return;
+      setTranscript("");
+      if (duration < 1000) {
+        isShortSilentTapRef.current = true;
+        Toast.show({ type: "info", text1: tr("ai:speechTooShort") });
+      } else {
+        Toast.show({ type: "info", text1: tr("ai:speechNoInput") });
       }
-      if (!text) {
-        if (duration < 1000) {
-          isShortSilentTapRef.current = true;
-          Toast.show({ type: "info", text1: tr("ai:speechTooShort") });
-        } else {
-          Toast.show({ type: "info", text1: tr("ai:speechNoInput") });
-        }
-        return;
-      }
-      if (zone === "text") {
-        setEditText(text);
-        setVoiceState("editing");
-        return;
-      }
-      await sendMessage(text);
-    },
-    [tr, sendMessage],
-  );
+      return;
+    }
+
+    setVoiceState("preview");
+  }, [tr]);
 
   const startHold = useCallback(async () => {
     if (state !== "idle") return;
@@ -642,6 +603,7 @@ export function AiFloatingAssistant() {
       releaseTimeoutRef.current = null;
     }
     transcriptRef.current = "";
+    setTranscript("");
     volumeNormRef.current = 0.12;
     setLiveVol(0.12);
     setVoiceState("recording");
@@ -659,57 +621,29 @@ export function AiFloatingAssistant() {
     }
   }, [tr, state]);
 
-  const panGesture = useMemo(() => {
-    return Gesture.Pan()
-      .onBegin(() => {
-        void startHold();
-      })
-      .onChange((e) => {
-        const zone = getGestureZone(e.absoluteX, e.absoluteY);
-        setActiveZone(zone);
-        if (zone === "cancel") {
-          zoneOpacityCancel.value = withTiming(1, { duration: 120 });
-          zoneScaleCancel.value = withSpring(1.1);
-          zoneOpacityText.value = withTiming(0.3, { duration: 120 });
-        } else if (zone === "text") {
-          zoneOpacityText.value = withTiming(1, { duration: 120 });
-          zoneScaleText.value = withSpring(1.1);
-          zoneOpacityCancel.value = withTiming(0.3, { duration: 120 });
-        } else {
-          zoneOpacityCancel.value = withTiming(0.6, { duration: 120 });
-          zoneOpacityText.value = withTiming(0.6, { duration: 120 });
-          zoneScaleCancel.value = withSpring(1);
-          zoneScaleText.value = withSpring(1);
-        }
-      })
-      .onEnd((e) => {
-        const zone = getGestureZone(e.absoluteX, e.absoluteY);
-        zoneOpacityCancel.value = withTiming(0, { duration: 150 });
-        zoneOpacityText.value = withTiming(0, { duration: 150 });
-        zoneScaleCancel.value = withSpring(0.8);
-        zoneScaleText.value = withSpring(0.8);
-        void finalizeUtterance(zone);
-      })
-      .minDistance(0)
-      .manualActivation(false);
-  }, [
-    startHold,
-    getGestureZone,
-    finalizeUtterance,
-    zoneOpacityCancel,
-    zoneOpacityText,
-    zoneScaleCancel,
-    zoneScaleText,
-  ]);
+  const handleStartHold = useCallback(() => {
+    void startHold();
+  }, [startHold]);
 
-  const cancelZoneStyle = useAnimatedStyle(() => ({
-    opacity: zoneOpacityCancel.value,
-    transform: [{ scale: zoneScaleCancel.value }],
-  }));
-  const textZoneStyle = useAnimatedStyle(() => ({
-    opacity: zoneOpacityText.value,
-    transform: [{ scale: zoneScaleText.value }],
-  }));
+  const handleEndHold = useCallback(() => {
+    void finalizeUtterance();
+  }, [finalizeUtterance]);
+
+  const handleSendFromBubble = useCallback(
+    (text: string) => {
+      setVoiceState("idle");
+      transcriptRef.current = "";
+      setTranscript("");
+      void sendMessage(text);
+    },
+    [sendMessage],
+  );
+
+  const handleCancelFromBubble = useCallback(() => {
+    setVoiceState("idle");
+    transcriptRef.current = "";
+    setTranscript("");
+  }, []);
 
   const fabTranslateY = fabBob.interpolate({
     inputRange: [0, 1],
@@ -885,50 +819,16 @@ export function AiFloatingAssistant() {
             </ScrollView>
 
             <View style={[styles.voiceDock, { borderTopColor: palette.line }]}>
-              {voiceState === "recording" && (
-                <View style={styles.zoneRow}>
-                  <Animated.View
-                    style={[
-                      styles.zone,
-                      cancelZoneStyle,
-                      { backgroundColor: "rgba(239,68,68,0.12)" },
-                    ]}
-                  >
-                    <Text style={[styles.zoneIcon, { color: "#ef4444" }]}>
-                      ×
-                    </Text>
-                    <Text style={[styles.zoneLabel, { color: "#ef4444" }]}>
-                      松开取消
-                    </Text>
-                  </Animated.View>
-                  <Animated.View
-                    style={[
-                      styles.zone,
-                      textZoneStyle,
-                      { backgroundColor: `${t.brand}20` },
-                    ]}
-                  >
-                    <Text style={[styles.zoneIcon, { color: t.brand }]}>
-                      ⌨
-                    </Text>
-                    <Text style={[styles.zoneLabel, { color: t.brand }]}>
-                      转文字
-                    </Text>
-                  </Animated.View>
-                </View>
-              )}
               <Text style={[styles.holdHint, { color: palette.muted }]}>
                 {voiceState === "recording"
-                  ? activeZone === "cancel"
-                    ? "松开手指，取消发送"
-                    : activeZone === "text"
-                      ? "松开手指，转为文字"
-                      : "手指上滑，选择操作"
-                  : isAiResponding
-                    ? "点击取消"
-                    : state === "executing"
-                      ? "AI 处理中..."
-                      : tr("ai:holdToSpeak")}
+                  ? "松开发送"
+                  : voiceState === "preview"
+                    ? "点击气泡可编辑"
+                    : isAiResponding
+                      ? "点击取消"
+                      : state === "executing"
+                        ? "AI 处理中..."
+                        : tr("ai:holdToSpeak")}
               </Text>
               <View style={styles.waveRow}>
                 {Array.from({ length: BAR_COUNT }).map((_, i) => {
@@ -951,38 +851,48 @@ export function AiFloatingAssistant() {
                 })}
               </View>
 
+              {(voiceState === "recording" || voiceState === "preview") && (
+                <VoiceBubble
+                  visible={true}
+                  text={transcript}
+                  mode={voiceState}
+                  onSend={handleSendFromBubble}
+                  onCancel={handleCancelFromBubble}
+                  theme={{
+                    surfaceElevated: t.surfaceElevated,
+                    textPrimary: t.textPrimary,
+                    textMuted: t.textMuted,
+                    brand: t.brand,
+                    divider: t.divider,
+                  }}
+                />
+              )}
+
               {state === "idle" ? (
-                <GestureDetector gesture={panGesture}>
-                  <View
-                    style={styles.micGestureArea}
-                    onLayout={(e) => {
-                      const { x, y, width, height } = e.nativeEvent.layout;
-                      micLayoutRef.current = { x, y, width, height };
-                    }}
-                  >
-                    <View
-                      style={[
-                        styles.micOuter,
-                        {
-                          borderColor: voiceState === "recording"
-                            ? t.brand
-                            : palette.line,
-                          backgroundColor:
-                            voiceState === "recording"
-                              ? t.brandSelectedHighlight
-                              : t.surfaceElevated,
-                        },
-                      ]}
-                    >
-                      <Svg width={28} height={28} viewBox="0 0 24 24">
-                        <Path
-                          d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V20H9v2h6v-2h-2v-2.08A7 7 0 0 0 19 11h-2z"
-                          fill={t.brand}
-                        />
-                      </Svg>
-                    </View>
-                  </View>
-                </GestureDetector>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={tr("ai:voiceButtonA11y")}
+                  onPressIn={handleStartHold}
+                  onPressOut={handleEndHold}
+                  style={({ pressed }) => [
+                    styles.micOuter,
+                    {
+                      borderColor: voiceState === "recording" ? t.brand : palette.line,
+                      backgroundColor:
+                        voiceState === "recording"
+                          ? t.brandSelectedHighlight
+                          : t.surfaceElevated,
+                      transform: [{ scale: pressed ? 1.04 : 1 }],
+                    },
+                  ]}
+                >
+                  <Svg width={28} height={28} viewBox="0 0 24 24">
+                    <Path
+                      d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V20H9v2h6v-2h-2v-2.08A7 7 0 0 0 19 11h-2z"
+                      fill={t.brand}
+                    />
+                  </Svg>
+                </Pressable>
               ) : (
                 <Pressable
                   accessibilityRole="button"
@@ -1020,22 +930,6 @@ export function AiFloatingAssistant() {
           </View>
         </View>
       </Modal>
-      <VoiceEditPanel
-        visible={voiceState === "editing"}
-        initialText={editText}
-        onSend={(text) => {
-          setVoiceState("idle");
-          if (text) void sendMessage(text);
-        }}
-        onCancel={() => setVoiceState("idle")}
-        theme={{
-          surfaceElevated: t.surfaceElevated,
-          textPrimary: t.textPrimary,
-          textMuted: t.textMuted,
-          brand: t.brand,
-          divider: t.divider,
-        }}
-      />
     </>
   )}
 </>
@@ -1219,34 +1113,5 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginRight: 14,
     alignSelf: "flex-end",
-  },
-  micGestureArea: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-  },
-  zoneRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-    paddingHorizontal: 24,
-    paddingBottom: 8,
-    height: 72,
-  },
-  zone: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  zoneIcon: {
-    fontSize: 24,
-    marginBottom: 2,
-  },
-  zoneLabel: {
-    fontFamily: "Manrope_500Medium",
-    fontSize: 11,
   },
 });

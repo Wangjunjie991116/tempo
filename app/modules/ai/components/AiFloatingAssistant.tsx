@@ -818,7 +818,7 @@ export function AiFloatingAssistant() {
               {messages.map(renderMessage)}
             </ScrollView>
 
-            <View style={[styles.voiceDock, { borderTopColor: palette.line }]}>
+            <View style={styles.voiceDock}>
               <Text style={[styles.holdHint, { color: palette.muted }]}>
                 {voiceState === "recording"
                   ? "松开发送"
@@ -835,6 +835,7 @@ export function AiFloatingAssistant() {
                   const base = Math.sin(waveTick / 3 + i * 0.55) * 0.35 + 0.65;
                   const vol = voiceState === "recording" ? liveVol : 0.1;
                   const h = 4 + 22 * base * (0.25 + vol * 0.75);
+                  const isRecording = voiceState === "recording";
                   return (
                     <View
                       key={i}
@@ -842,8 +843,8 @@ export function AiFloatingAssistant() {
                         styles.waveBar,
                         {
                           height: h,
-                          backgroundColor: voiceState === "recording" ? t.brand : palette.line,
-                          opacity: voiceState === "recording" ? 0.35 + vol * 0.55 : 0.35,
+                          backgroundColor: isRecording ? t.brand : "rgba(120,120,140,0.25)",
+                          opacity: isRecording ? 0.5 + vol * 0.5 : 0.4,
                         },
                       ]}
                     />
@@ -877,19 +878,22 @@ export function AiFloatingAssistant() {
                   style={({ pressed }) => [
                     styles.micOuter,
                     {
-                      borderColor: voiceState === "recording" ? t.brand : palette.line,
-                      backgroundColor:
-                        voiceState === "recording"
-                          ? t.brandSelectedHighlight
-                          : t.surfaceElevated,
-                      transform: [{ scale: pressed ? 1.04 : 1 }],
+                      borderColor: voiceState === "recording" ? t.brand : "rgba(120,120,140,0.2)",
+                      backgroundColor: voiceState === "recording"
+                        ? `${t.brand}15`
+                        : t.surfaceElevated,
+                      transform: [{ scale: pressed || voiceState === "recording" ? 1.06 : 1 }],
+                      shadowColor: voiceState === "recording" ? t.brand : "#000",
+                      shadowOpacity: voiceState === "recording" ? 0.3 : 0.08,
+                      shadowRadius: voiceState === "recording" ? 16 : 8,
+                      elevation: voiceState === "recording" ? 8 : 4,
                     },
                   ]}
                 >
                   <Svg width={28} height={28} viewBox="0 0 24 24">
                     <Path
                       d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V20H9v2h6v-2h-2v-2.08A7 7 0 0 0 19 11h-2z"
-                      fill={t.brand}
+                      fill={voiceState === "recording" ? t.brand : `${t.brand}cc`}
                     />
                   </Svg>
                 </Pressable>
@@ -903,9 +907,13 @@ export function AiFloatingAssistant() {
                   style={({ pressed }) => [
                     styles.micOuter,
                     {
-                      borderColor: isAiResponding ? "#ef4444" : palette.line,
+                      borderColor: isAiResponding ? "#ef4444" : "rgba(120,120,140,0.2)",
                       backgroundColor: t.surfaceElevated,
-                      transform: [{ scale: pressed ? 1.04 : 1 }],
+                      transform: [{ scale: pressed ? 1.06 : 1 }],
+                      shadowColor: isAiResponding ? "#ef4444" : "#000",
+                      shadowOpacity: isAiResponding ? 0.25 : 0.08,
+                      shadowRadius: isAiResponding ? 12 : 8,
+                      elevation: isAiResponding ? 6 : 4,
                     },
                   ]}
                 >
@@ -920,7 +928,7 @@ export function AiFloatingAssistant() {
                     <Svg width={28} height={28} viewBox="0 0 24 24">
                       <Path
                         d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V20H9v2h6v-2h-2v-2.08A7 7 0 0 0 19 11h-2z"
-                        fill={t.brand}
+                        fill={`${t.brand}cc`}
                       />
                     </Svg>
                   )}
@@ -1077,35 +1085,36 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   voiceDock: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: 12,
+    paddingTop: 16,
     alignItems: "center",
-    gap: 10,
+    gap: 12,
   },
   holdHint: {
     fontFamily: "Manrope_500Medium",
-    fontSize: 12,
+    fontSize: 13,
+    letterSpacing: 0.3,
   },
   waveRow: {
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "center",
-    gap: 3,
-    height: 32,
-    marginBottom: 4,
+    gap: 4,
+    height: 36,
+    marginBottom: 8,
   },
   waveBar: {
     width: 4,
     borderRadius: 2,
   },
   micOuter: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 2,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 2.5,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 4,
+    shadowOffset: { width: 0, height: 4 },
   },
   cancelledLabel: {
     fontFamily: "Manrope_400Regular",

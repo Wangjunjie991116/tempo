@@ -4,7 +4,7 @@ import * as Haptics from "expo-haptics";
 import * as Localization from "expo-localization";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Animated,
+  Animated as RNAnimated,
   Dimensions,
   Easing,
   Modal,
@@ -33,6 +33,17 @@ import { useTempoTheme } from "../../../core/theme";
 import { Toast, ToastRenderer } from "../../../core/ui";
 import { useAiChat } from "../hooks/useAiChat";
 import type { ChatMessage } from "../types";
+import {
+  Gesture,
+  GestureDetector,
+} from "react-native-gesture-handler";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+import { VoiceEditPanel } from "./VoiceEditPanel";
 
 const BAR_COUNT = 21;
 
@@ -163,8 +174,8 @@ function StageIndicator({
   color: string;
   isActive?: boolean;
 }) {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const opacityAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new RNAnimated.Value(1)).current;
+  const opacityAnim = useRef(new RNAnimated.Value(1)).current;
 
   useEffect(() => {
     if (!isActive) {
@@ -173,15 +184,15 @@ function StageIndicator({
       return;
     }
 
-    const scaleLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
+    const scaleLoop = RNAnimated.loop(
+      RNAnimated.sequence([
+        RNAnimated.timing(scaleAnim, {
           toValue: 1.6,
           duration: 600,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
-        Animated.timing(scaleAnim, {
+        RNAnimated.timing(scaleAnim, {
           toValue: 1,
           duration: 600,
           easing: Easing.inOut(Easing.sin),
@@ -190,15 +201,15 @@ function StageIndicator({
       ]),
     );
 
-    const opacityLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacityAnim, {
+    const opacityLoop = RNAnimated.loop(
+      RNAnimated.sequence([
+        RNAnimated.timing(opacityAnim, {
           toValue: 0.4,
           duration: 600,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
-        Animated.timing(opacityAnim, {
+        RNAnimated.timing(opacityAnim, {
           toValue: 1,
           duration: 600,
           easing: Easing.inOut(Easing.sin),
@@ -220,7 +231,7 @@ function StageIndicator({
 
   return (
     <View style={styles.stageRow}>
-      <Animated.View
+      <RNAnimated.View
         style={[
           styles.stageDot,
           {
@@ -398,14 +409,23 @@ export function AiFloatingAssistant() {
     useAiChat();
 
   const [open, setOpen] = useState(false);
-  const [holding, setHolding] = useState(false);
+  type VoiceState = "idle" | "recording" | "editing";
+  const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [waveTick, setWaveTick] = useState(0);
   const [liveVol, setLiveVol] = useState(0.12);
 
+  const [activeZone, setActiveZone] = useState<"cancel" | "text" | null>(null);
+  const [editText, setEditText] = useState("");
+  const micLayoutRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
+  const zoneOpacityCancel = useSharedValue(0);
+  const zoneOpacityText = useSharedValue(0);
+  const zoneScaleCancel = useSharedValue(0.8);
+  const zoneScaleText = useSharedValue(0.8);
+
   const transcriptRef = useRef("");
   const volumeNormRef = useRef(0.15);
-  const shimmer = useRef(new Animated.Value(0)).current;
-  const fabBob = useRef(new Animated.Value(0)).current;
+  const shimmer = useRef(new RNAnimated.Value(0)).current;
+  const fabBob = useRef(new RNAnimated.Value(0)).current;
   const volFlushRaf = useRef<number | null>(null);
   const chatScrollRef = useRef<ScrollView | null>(null);
   const trRef = useRef(tr);
@@ -428,21 +448,38 @@ export function AiFloatingAssistant() {
     [t.brand, t.divider, t.surfaceElevated, t.textMuted],
   );
 
+  const getGestureZone = useCallback(
+    (absX: number, absY: number): "cancel" | "text" | null => {
+      const { x, y, width, height } = micLayoutRef.current;
+      const centerX = x + width / 2;
+      const centerY = y + height / 2;
+      const dx = absX - centerX;
+      const dy = absY - centerY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 40) return null;
+      const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+      if (angle >= -60 && angle <= 0 && dy < 0) return "text";
+      if (angle >= -180 && angle <= -120 && dy < 0) return "cancel";
+      return null;
+    },
+    [],
+  );
+
   const appendAssistantIntro = useCallback(() => {
     // 已由 useAiChat 管理消息，intro 在首次打开时通过 assistantAck 体现
     // 保留空函数兼容旧调用
   }, []);
 
   useEffect(() => {
-    const drift = Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmer, {
+    const drift = RNAnimated.loop(
+      RNAnimated.sequence([
+        RNAnimated.timing(shimmer, {
           toValue: 1,
           duration: 2600,
           easing: Easing.inOut(Easing.quad),
           useNativeDriver: true,
         }),
-        Animated.timing(shimmer, {
+        RNAnimated.timing(shimmer, {
           toValue: 0,
           duration: 2600,
           easing: Easing.inOut(Easing.quad),
@@ -450,15 +487,15 @@ export function AiFloatingAssistant() {
         }),
       ]),
     );
-    const bob = Animated.loop(
-      Animated.sequence([
-        Animated.timing(fabBob, {
+    const bob = RNAnimated.loop(
+      RNAnimated.sequence([
+        RNAnimated.timing(fabBob, {
           toValue: 1,
           duration: 1200,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
-        Animated.timing(fabBob, {
+        RNAnimated.timing(fabBob, {
           toValue: 0,
           duration: 1200,
           easing: Easing.inOut(Easing.sin),
@@ -478,7 +515,7 @@ export function AiFloatingAssistant() {
 
   useEffect(() => {
     if (open) return;
-    setHolding(false);
+    setVoiceState("idle");
     setLiveVol(0.12);
     transcriptRef.current = "";
     void Voice.cancel();
@@ -516,7 +553,7 @@ export function AiFloatingAssistant() {
           clearTimeout(releaseTimeoutRef.current);
           releaseTimeoutRef.current = null;
         }
-        void finalizeUtteranceInternal();
+        void finalizeUtterance(null);
       }
     };
     Voice.onSpeechError = (e) => {
@@ -546,10 +583,10 @@ export function AiFloatingAssistant() {
   }, [open]);
 
   useEffect(() => {
-    if (!holding) return;
+    if (voiceState !== "recording") return;
     const id = setInterval(() => setWaveTick((n) => n + 1), 48);
     return () => clearInterval(id);
-  }, [holding]);
+  }, [voiceState]);
 
   useEffect(() => {
     if (!open) return;
@@ -558,79 +595,121 @@ export function AiFloatingAssistant() {
     });
   }, [messages, open]);
 
-  const finalizeUtteranceInternal = useCallback(async () => {
-    isReleasingRef.current = false;
-    if (releaseTimeoutRef.current) {
-      clearTimeout(releaseTimeoutRef.current);
-      releaseTimeoutRef.current = null;
-    }
-
-    setHolding(false);
-    volumeNormRef.current = 0.12;
-    setLiveVol(0.12);
-
-    await Voice.stop().catch(() => undefined);
-
-    const text = transcriptRef.current.trim();
-    const duration = Date.now() - holdStartTimeRef.current;
-    transcriptRef.current = "";
-
-    if (!text) {
-      if (duration < 1000) {
-        isShortSilentTapRef.current = true;
-        Toast.show({
-          type: "info",
-          text1: tr("ai:speechTooShort"),
-        });
-      } else {
-        Toast.show({
-          type: "info",
-          text1: tr("ai:speechNoInput"),
-        });
+  const finalizeUtterance = useCallback(
+    async (zone: "cancel" | "text" | null) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      isReleasingRef.current = true;
+      if (releaseTimeoutRef.current) {
+        clearTimeout(releaseTimeoutRef.current);
+        releaseTimeoutRef.current = null;
       }
-      return;
-    }
-
-    // 发送到 AI 后端
-    await sendMessage(text);
-  }, [tr, sendMessage]);
-
-  const finalizeUtterance = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // 标记用户已松手，给引擎 1000ms 缓冲时间接收最后一批 partial results
-    isReleasingRef.current = true;
-    releaseTimeoutRef.current = setTimeout(() => {
-      void finalizeUtteranceInternal();
-    }, 300);
-  }, [finalizeUtteranceInternal]);
+      setVoiceState("idle");
+      setActiveZone(null);
+      volumeNormRef.current = 0.12;
+      setLiveVol(0.12);
+      await Voice.stop().catch(() => undefined);
+      const text = transcriptRef.current.trim();
+      const duration = Date.now() - holdStartTimeRef.current;
+      transcriptRef.current = "";
+      if (zone === "cancel") {
+        return;
+      }
+      if (!text) {
+        if (duration < 1000) {
+          isShortSilentTapRef.current = true;
+          Toast.show({ type: "info", text1: tr("ai:speechTooShort") });
+        } else {
+          Toast.show({ type: "info", text1: tr("ai:speechNoInput") });
+        }
+        return;
+      }
+      if (zone === "text") {
+        setEditText(text);
+        setVoiceState("editing");
+        return;
+      }
+      await sendMessage(text);
+    },
+    [tr, sendMessage],
+  );
 
   const startHold = useCallback(async () => {
+    if (state !== "idle") return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // 清除之前的 release 状态
     isReleasingRef.current = false;
     if (releaseTimeoutRef.current) {
       clearTimeout(releaseTimeoutRef.current);
       releaseTimeoutRef.current = null;
     }
-
     transcriptRef.current = "";
     volumeNormRef.current = 0.12;
     setLiveVol(0.12);
-    setHolding(true);
+    setVoiceState("recording");
     holdStartTimeRef.current = Date.now();
     isShortSilentTapRef.current = false;
-
     try {
       await Voice.cancel().catch(() => undefined);
       await Voice.start(pickVoiceLocale());
     } catch {
-      setHolding(false);
+      setVoiceState("idle");
       Toast.show({
         type: "error",
         text1: tr("ai:speechUnavailable"),
       });
     }
-  }, [tr]);
+  }, [tr, state]);
+
+  const panGesture = useMemo(() => {
+    return Gesture.Pan()
+      .onBegin(() => {
+        void startHold();
+      })
+      .onChange((e) => {
+        const zone = getGestureZone(e.absoluteX, e.absoluteY);
+        setActiveZone(zone);
+        if (zone === "cancel") {
+          zoneOpacityCancel.value = withTiming(1, { duration: 120 });
+          zoneScaleCancel.value = withSpring(1.1);
+          zoneOpacityText.value = withTiming(0.3, { duration: 120 });
+        } else if (zone === "text") {
+          zoneOpacityText.value = withTiming(1, { duration: 120 });
+          zoneScaleText.value = withSpring(1.1);
+          zoneOpacityCancel.value = withTiming(0.3, { duration: 120 });
+        } else {
+          zoneOpacityCancel.value = withTiming(0.6, { duration: 120 });
+          zoneOpacityText.value = withTiming(0.6, { duration: 120 });
+          zoneScaleCancel.value = withSpring(1);
+          zoneScaleText.value = withSpring(1);
+        }
+      })
+      .onEnd((e) => {
+        const zone = getGestureZone(e.absoluteX, e.absoluteY);
+        zoneOpacityCancel.value = withTiming(0, { duration: 150 });
+        zoneOpacityText.value = withTiming(0, { duration: 150 });
+        zoneScaleCancel.value = withSpring(0.8);
+        zoneScaleText.value = withSpring(0.8);
+        void finalizeUtterance(zone);
+      })
+      .minDistance(0)
+      .manualActivation(false);
+  }, [
+    startHold,
+    getGestureZone,
+    finalizeUtterance,
+    zoneOpacityCancel,
+    zoneOpacityText,
+    zoneScaleCancel,
+    zoneScaleText,
+  ]);
+
+  const cancelZoneStyle = useAnimatedStyle(() => ({
+    opacity: zoneOpacityCancel.value,
+    transform: [{ scale: zoneScaleCancel.value }],
+  }));
+  const textZoneStyle = useAnimatedStyle(() => ({
+    opacity: zoneOpacityText.value,
+    transform: [{ scale: zoneScaleText.value }],
+  }));
 
   const fabTranslateY = fabBob.interpolate({
     inputRange: [0, 1],
@@ -719,7 +798,7 @@ export function AiFloatingAssistant() {
     <>
       {visible && (
         <>
-          <Animated.View
+          <RNAnimated.View
             pointerEvents="box-none"
             style={[
               styles.fabWrap,
@@ -746,11 +825,11 @@ export function AiFloatingAssistant() {
                 },
               ]}
             >
-              <Animated.View style={{ transform: [{ scale: orbPulse }] }}>
+              <RNAnimated.View style={{ transform: [{ scale: orbPulse }] }}>
                 <AiRobotOrbGraphic size={52} />
-              </Animated.View>
+              </RNAnimated.View>
             </Pressable>
-          </Animated.View>
+          </RNAnimated.View>
 
           <Modal
             visible={open}
@@ -806,9 +885,45 @@ export function AiFloatingAssistant() {
             </ScrollView>
 
             <View style={[styles.voiceDock, { borderTopColor: palette.line }]}>
+              {voiceState === "recording" && (
+                <View style={styles.zoneRow}>
+                  <Animated.View
+                    style={[
+                      styles.zone,
+                      cancelZoneStyle,
+                      { backgroundColor: "rgba(239,68,68,0.12)" },
+                    ]}
+                  >
+                    <Text style={[styles.zoneIcon, { color: "#ef4444" }]}>
+                      ×
+                    </Text>
+                    <Text style={[styles.zoneLabel, { color: "#ef4444" }]}>
+                      松开取消
+                    </Text>
+                  </Animated.View>
+                  <Animated.View
+                    style={[
+                      styles.zone,
+                      textZoneStyle,
+                      { backgroundColor: `${t.brand}20` },
+                    ]}
+                  >
+                    <Text style={[styles.zoneIcon, { color: t.brand }]}>
+                      ⌨
+                    </Text>
+                    <Text style={[styles.zoneLabel, { color: t.brand }]}>
+                      转文字
+                    </Text>
+                  </Animated.View>
+                </View>
+              )}
               <Text style={[styles.holdHint, { color: palette.muted }]}>
-                {holding
-                  ? tr("ai:holdListening")
+                {voiceState === "recording"
+                  ? activeZone === "cancel"
+                    ? "松开手指，取消发送"
+                    : activeZone === "text"
+                      ? "松开手指，转为文字"
+                      : "手指上滑，选择操作"
                   : isAiResponding
                     ? "点击取消"
                     : state === "executing"
@@ -818,7 +933,7 @@ export function AiFloatingAssistant() {
               <View style={styles.waveRow}>
                 {Array.from({ length: BAR_COUNT }).map((_, i) => {
                   const base = Math.sin(waveTick / 3 + i * 0.55) * 0.35 + 0.65;
-                  const vol = holding ? liveVol : 0.1;
+                  const vol = voiceState === "recording" ? liveVol : 0.1;
                   const h = 4 + 22 * base * (0.25 + vol * 0.75);
                   return (
                     <View
@@ -827,8 +942,8 @@ export function AiFloatingAssistant() {
                         styles.waveBar,
                         {
                           height: h,
-                          backgroundColor: holding ? t.brand : palette.line,
-                          opacity: holding ? 0.35 + vol * 0.55 : 0.35,
+                          backgroundColor: voiceState === "recording" ? t.brand : palette.line,
+                          opacity: voiceState === "recording" ? 0.35 + vol * 0.55 : 0.35,
                         },
                       ]}
                     />
@@ -836,52 +951,94 @@ export function AiFloatingAssistant() {
                 })}
               </View>
 
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={
-                  isAiResponding ? "取消 AI 回答" : tr("ai:voiceButtonA11y")
-                }
-                onPressIn={isAiResponding ? undefined : startHold}
-                onPressOut={isAiResponding ? undefined : finalizeUtterance}
-                onPress={isAiResponding ? abortResponse : undefined}
-                style={({ pressed }) => [
-                  styles.micOuter,
-                  {
-                    borderColor: holding
-                      ? t.brand
-                      : isAiResponding
-                        ? "#ef4444"
-                        : palette.line,
-                    backgroundColor: holding
-                      ? t.brandSelectedHighlight
-                      : t.surfaceElevated,
-                    transform: [{ scale: pressed || holding ? 1.04 : 1 }],
-                  },
-                ]}
-              >
-                {isAiResponding ? (
-                  <Svg width={28} height={28} viewBox="0 0 24 24">
-                    <Path
-                      d="M6 4h4v16H6zm8 0h4v16h-4z"
-                      fill="#ef4444"
-                    />
-                  </Svg>
-                ) : (
-                  <Svg width={28} height={28} viewBox="0 0 24 24">
-                    <Path
-                      d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V20H9v2h6v-2h-2v-2.08A7 7 0 0 0 19 11h-2z"
-                      fill={t.brand}
-                    />
-                  </Svg>
-                )}
-              </Pressable>
+              {state === "idle" ? (
+                <GestureDetector gesture={panGesture}>
+                  <View
+                    style={styles.micGestureArea}
+                    onLayout={(e) => {
+                      const { x, y, width, height } = e.nativeEvent.layout;
+                      micLayoutRef.current = { x, y, width, height };
+                    }}
+                  >
+                    <View
+                      style={[
+                        styles.micOuter,
+                        {
+                          borderColor: voiceState === "recording"
+                            ? t.brand
+                            : palette.line,
+                          backgroundColor:
+                            voiceState === "recording"
+                              ? t.brandSelectedHighlight
+                              : t.surfaceElevated,
+                        },
+                      ]}
+                    >
+                      <Svg width={28} height={28} viewBox="0 0 24 24">
+                        <Path
+                          d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V20H9v2h6v-2h-2v-2.08A7 7 0 0 0 19 11h-2z"
+                          fill={t.brand}
+                        />
+                      </Svg>
+                    </View>
+                  </View>
+                </GestureDetector>
+              ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    isAiResponding ? "取消 AI 回答" : tr("ai:voiceButtonA11y")
+                  }
+                  onPress={isAiResponding ? abortResponse : undefined}
+                  style={({ pressed }) => [
+                    styles.micOuter,
+                    {
+                      borderColor: isAiResponding ? "#ef4444" : palette.line,
+                      backgroundColor: t.surfaceElevated,
+                      transform: [{ scale: pressed ? 1.04 : 1 }],
+                    },
+                  ]}
+                >
+                  {isAiResponding ? (
+                    <Svg width={28} height={28} viewBox="0 0 24 24">
+                      <Path
+                        d="M6 4h4v16H6zm8 0h4v16h-4z"
+                        fill="#ef4444"
+                      />
+                    </Svg>
+                  ) : (
+                    <Svg width={28} height={28} viewBox="0 0 24 24">
+                      <Path
+                        d="M12 14a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v4a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V20H9v2h6v-2h-2v-2.08A7 7 0 0 0 19 11h-2z"
+                        fill={t.brand}
+                      />
+                    </Svg>
+                  )}
+                </Pressable>
+              )}
             </View>
           </View>
         </View>
-          </Modal>
-        </>
-      )}
+      </Modal>
+      <VoiceEditPanel
+        visible={voiceState === "editing"}
+        initialText={editText}
+        onSend={(text) => {
+          setVoiceState("idle");
+          if (text) void sendMessage(text);
+        }}
+        onCancel={() => setVoiceState("idle")}
+        theme={{
+          surfaceElevated: t.surfaceElevated,
+          textPrimary: t.textPrimary,
+          textMuted: t.textMuted,
+          brand: t.brand,
+          divider: t.divider,
+        }}
+      />
     </>
+  )}
+</>
   );
 }
 
@@ -1062,5 +1219,34 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginRight: 14,
     alignSelf: "flex-end",
+  },
+  micGestureArea: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+  },
+  zoneRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    paddingHorizontal: 24,
+    paddingBottom: 8,
+    height: 72,
+  },
+  zone: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  zoneIcon: {
+    fontSize: 24,
+    marginBottom: 2,
+  },
+  zoneLabel: {
+    fontFamily: "Manrope_500Medium",
+    fontSize: 11,
   },
 });

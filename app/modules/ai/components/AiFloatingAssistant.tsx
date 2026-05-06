@@ -652,8 +652,8 @@ export function AiFloatingAssistant() {
     if (m.role === "user") {
       return (
         <View key={m.id} style={[styles.bubbleRow, styles.bubbleRowUser]}>
-          <View>
-            <View style={[styles.bubble, { backgroundColor: t.brand }]}>
+          <View style={{ maxWidth: "86%", alignItems: "flex-end" }}>
+            <View style={[styles.bubble, { backgroundColor: t.brand, maxWidth: undefined }]}>
               <Text style={[styles.bubbleText, { color: t.surfaceElevated }]}>
                 {m.text}
               </Text>

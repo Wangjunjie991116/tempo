@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { AUTH_STACK } from "../../core/navigation/routes";
 import type { AuthStackParamList } from "../../core/navigation/types";
 import { useSession } from "../../core/session";
+import { requestVoicePermissions } from "../../core/permissions/requestPermissions";
 import { AuthInput } from "./components/AuthInput";
 import { AuthButton } from "./components/AuthButton";
 import { SocialButton } from "./components/SocialButton";
@@ -29,6 +30,10 @@ export default function SignInScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const { signIn } = useSession();
   const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    void requestVoicePermissions();
+  }, []);
 
   async function handleSubmit() {
     setError(null);

@@ -84,4 +84,115 @@ describe("partitionScheduleForDay", () => {
     const { finished } = partitionScheduleForDay(items, anchor);
     expect(finished).toEqual([]);
   });
+
+  describe("section sorting", () => {
+    const base = {
+      title: "t",
+      tag: "brainstorm" as const,
+      attendeeCount: 1,
+    };
+
+    it("orders upcoming by startAt ascending", () => {
+      const items: ScheduleItem[] = [
+        {
+          ...base,
+          id: "late",
+          startAt: new Date(2026, 4, 2, 15, 0).getTime(),
+          endAt: new Date(2026, 4, 2, 16, 0).getTime(),
+          status: "upcoming",
+        },
+        {
+          ...base,
+          id: "early",
+          startAt: new Date(2026, 4, 2, 9, 0).getTime(),
+          endAt: new Date(2026, 4, 2, 10, 0).getTime(),
+          status: "upcoming",
+        },
+      ];
+      const { upcoming } = partitionScheduleForDay(items, anchor);
+      expect(upcoming.map((i) => i.id)).toEqual(["early", "late"]);
+    });
+
+    it("breaks startAt ties by earlier endAt first", () => {
+      const startAt = new Date(2026, 4, 2, 9, 0).getTime();
+      const items: ScheduleItem[] = [
+        {
+          ...base,
+          id: "longer",
+          startAt,
+          endAt: new Date(2026, 4, 2, 11, 0).getTime(),
+          status: "upcoming",
+        },
+        {
+          ...base,
+          id: "shorter",
+          startAt,
+          endAt: new Date(2026, 4, 2, 10, 0).getTime(),
+          status: "upcoming",
+        },
+      ];
+      const { upcoming } = partitionScheduleForDay(items, anchor);
+      expect(upcoming.map((i) => i.id)).toEqual(["shorter", "longer"]);
+    });
+
+    it("preserves input order when startAt and endAt both tie (creation order)", () => {
+      const startAt = new Date(2026, 4, 2, 9, 0).getTime();
+      const endAt = new Date(2026, 4, 2, 10, 0).getTime();
+      const items: ScheduleItem[] = [
+        { ...base, id: "first", startAt, endAt, status: "upcoming" },
+        { ...base, id: "second", startAt, endAt, status: "upcoming" },
+        { ...base, id: "third", startAt, endAt, status: "upcoming" },
+      ];
+      const { upcoming } = partitionScheduleForDay(items, anchor);
+      expect(upcoming.map((i) => i.id)).toEqual(["first", "second", "third"]);
+    });
+
+    it("treats endAt=0 as equal to startAt for tie-breaking", () => {
+      const startAt = new Date(2026, 4, 2, 9, 0).getTime();
+      const items: ScheduleItem[] = [
+        {
+          ...base,
+          id: "with-end",
+          startAt,
+          endAt: new Date(2026, 4, 2, 10, 0).getTime(),
+          status: "upcoming",
+        },
+        { ...base, id: "no-end", startAt, endAt: 0, status: "upcoming" },
+      ];
+      const { upcoming } = partitionScheduleForDay(items, anchor);
+      expect(upcoming.map((i) => i.id)).toEqual(["no-end", "with-end"]);
+    });
+
+    it("applies the same ordering to the finished bucket", () => {
+      const items: ScheduleItem[] = [
+        {
+          ...base,
+          id: "f-late",
+          startAt: new Date(2026, 4, 2, 14, 0).getTime(),
+          endAt: new Date(2026, 4, 2, 15, 0).getTime(),
+          status: "finished",
+        },
+        {
+          ...base,
+          id: "f-early-short",
+          startAt: new Date(2026, 4, 2, 9, 0).getTime(),
+          endAt: new Date(2026, 4, 2, 9, 30).getTime(),
+          status: "finished",
+        },
+        {
+          ...base,
+          id: "f-early-long",
+          startAt: new Date(2026, 4, 2, 9, 0).getTime(),
+          endAt: new Date(2026, 4, 2, 11, 0).getTime(),
+          status: "finished",
+        },
+      ];
+      const { finished } = partitionScheduleForDay(items, anchor);
+      expect(finished.map((i) => i.id)).toEqual([
+        "f-early-short",
+        "f-early-long",
+        "f-late",
+      ]);
+    });
+  });
 });

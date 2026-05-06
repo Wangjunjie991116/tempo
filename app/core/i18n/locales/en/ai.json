@@ -26,5 +26,12 @@
   "updated": "Schedule updated",
   "deleted": "Schedule deleted",
   "notFound": "Not found",
-  "networkError": "Network error. Please try again later."
+  "networkError": "Network error. Please try again later.",
+  "permissionAlertTitle": "Permission Required",
+  "permissionAlertCancel": "Cancel",
+  "permissionAlertOpenSettings": "Settings",
+  "permissionMicrophone": "Microphone",
+  "permissionSpeechRecognition": "Speech Recognition",
+  "permissionDeniedSingle": "{{permission}} permission has been denied. Please enable it in Settings.",
+  "permissionDeniedBoth": "Microphone and Speech Recognition permissions have been denied. Please enable them in Settings."
 }

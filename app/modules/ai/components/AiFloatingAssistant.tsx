@@ -4,9 +4,11 @@ import * as Haptics from "expo-haptics";
 import * as Localization from "expo-localization";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   Animated as RNAnimated,
   Dimensions,
   Easing,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -32,6 +34,7 @@ import { useTranslation } from "../../../core/i18n";
 import { useTempoTheme } from "../../../core/theme";
 import { Toast, ToastRenderer } from "../../../core/ui";
 import { useAiChat } from "../hooks/useAiChat";
+import { ensureVoicePermissions } from "../../../core/permissions/requestPermissions";
 import type { ChatMessage } from "../types";
 import { VoiceBubble } from "./VoiceBubble";
 
@@ -596,6 +599,35 @@ export function AiFloatingAssistant() {
 
   const startHold = useCallback(async () => {
     if (state === "sending" || state === "streaming" || state === "executing") return;
+
+    try {
+      const permission = await ensureVoicePermissions();
+      if (!permission.granted) {
+        const missing = permission.missing;
+        const title = tr("ai:permissionAlertTitle");
+        const message =
+          missing.length >= 2
+            ? tr("ai:permissionDeniedBoth")
+            : tr("ai:permissionDeniedSingle", {
+                permission:
+                  missing[0] === "microphone"
+                    ? tr("ai:permissionMicrophone")
+                    : tr("ai:permissionSpeechRecognition"),
+              });
+        Alert.alert(title, message, [
+          { text: tr("ai:permissionAlertCancel"), style: "cancel" },
+          { text: tr("ai:permissionAlertOpenSettings"), onPress: () => void Linking.openSettings() },
+        ]);
+        return;
+      }
+    } catch {
+      Toast.show({
+        type: "error",
+        text1: tr("ai:speechUnavailable"),
+      });
+      return;
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     isReleasingRef.current = false;
     if (releaseTimeoutRef.current) {

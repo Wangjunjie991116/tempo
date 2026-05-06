@@ -35,10 +35,27 @@ function finishedAnchorMs(item: ScheduleItem): number {
 }
 
 /**
+ * 同板块内卡片排序锚点：优先 `startAt`，次以 `endAt`（未设置则回退 `startAt`）。
+ * `Array.prototype.sort` 自 ES2019 起稳定，因此并列项会保留原数组顺序，
+ * 等同于 `addScheduleItem` 的插入顺序 / 创建顺序。
+ */
+function sortInSectionOrder(items: ScheduleItem[]): ScheduleItem[] {
+  return [...items].sort((a, b) => {
+    if (a.startAt !== b.startAt) return a.startAt - b.startAt;
+    const aEnd = a.endAt > 0 ? a.endAt : a.startAt;
+    const bEnd = b.endAt > 0 ? b.endAt : b.startAt;
+    return aEnd - bEnd;
+  });
+}
+
+/**
  * 将全量日程列表按「某一天」拆成 **未完成 / 已完成** 两段（均为本地日历语义）。
  *
  * - **upcoming**：`status === "upcoming"` 且 `startAt` 落在 `day` 当天。
  * - **finished**：`status === "finished"`，归属日以 **`endAt`（>0）优先**，否则 `startAt`。
+ *
+ * 两段内部均按 `startAt` 升序；`startAt` 相同时按 `endAt` 升序
+ * （`endAt=0` 视同 `startAt`）；若仍并列则保留原数组中的顺序（即创建顺序）。
  *
  * @param items 仓储返回的全量数组（或内存中的副本）
  * @param day 当前分页 / 日期条选中的本地日
@@ -58,5 +75,8 @@ export function partitionScheduleForDay(
     if (i.status !== "finished") return false;
     return sameLocalDayMs(finishedAnchorMs(i), day);
   });
-  return { upcoming, finished };
+  return {
+    upcoming: sortInSectionOrder(upcoming),
+    finished: sortInSectionOrder(finished),
+  };
 }

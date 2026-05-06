@@ -26,5 +26,12 @@
   "updated": "已更新日程",
   "deleted": "已删除日程",
   "notFound": "未找到该日程",
-  "networkError": "网络异常，请稍后重试"
+  "networkError": "网络异常，请稍后重试",
+  "permissionAlertTitle": "权限提示",
+  "permissionAlertCancel": "取消",
+  "permissionAlertOpenSettings": "去设置",
+  "permissionMicrophone": "麦克风",
+  "permissionSpeechRecognition": "语音识别",
+  "permissionDeniedSingle": "{{permission}}权限已被拒绝，请在系统设置中开启",
+  "permissionDeniedBoth": "麦克风和语音识别权限已被拒绝，请在系统设置中开启"
 }

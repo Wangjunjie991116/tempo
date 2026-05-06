@@ -88,7 +88,7 @@ export function useAiChat() {
     setAiMessages(roundStartAiMessagesRef.current);
     setMessages((prev) =>
       prev.map((m, idx) =>
-        idx === roundStartMessagesLengthRef.current - 1 && m.type === "user"
+        idx === roundStartMessagesLengthRef.current && m.type === "user"
           ? { ...m, cancelled: true }
           : m,
       ),

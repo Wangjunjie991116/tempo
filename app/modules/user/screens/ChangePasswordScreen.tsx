@@ -50,7 +50,7 @@ function RuleItem({
         {satisfied && (
           <MaterialCommunityIcons
             name="check"
-            size={12}
+            size={14}
             color="#FFFFFF"
           />
         )}
@@ -224,9 +224,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   ruleDot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },

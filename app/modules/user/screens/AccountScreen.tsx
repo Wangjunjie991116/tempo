@@ -60,6 +60,19 @@ export default function AccountScreen({ navigation }: Props) {
           <MaterialCommunityIcons name="chevron-right" size={20} color="#A5A5A5" />
         </Pressable>
 
+        {/* Personal Info 分组 */}
+        <View style={styles.group}>
+          <Text style={styles.groupTitle}>Personal Info</Text>
+          <View style={styles.card}>
+            <AccountListItem
+              variant="nav"
+              icon="cog-outline"
+              title={t("common:settingsTitle")}
+              onPress={() => navigation.navigate(USER_STACK.Settings)}
+            />
+          </View>
+        </View>
+
         {/* Security 分组 */}
         <View style={styles.group}>
           <Text style={styles.groupTitle}>Security</Text>

@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -74,6 +75,9 @@ export default function EditProfileScreen({ navigation }: Props) {
   const [countrySheetVisible, setCountrySheetVisible] = useState(false);
   const [datePickerVisible, setDatePickerVisible] = useState(false);
 
+  const dobDate = useMemo(() => parseDate(dob) ?? new Date(), [dob]);
+  const [tempDate, setTempDate] = useState<Date>(() => parseDate(dob) ?? new Date());
+
   const isValid = useMemo(() => {
     if (!name.trim()) return false;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return false;
@@ -92,17 +96,22 @@ export default function EditProfileScreen({ navigation }: Props) {
 
   const handleDateChange = useCallback(
     (_event: any, selectedDate?: Date) => {
-      if (Platform.OS === "android") {
-        setDatePickerVisible(false);
-      }
       if (selectedDate) {
-        setDob(formatDate(selectedDate));
+        setTempDate(selectedDate);
       }
     },
     [],
   );
 
-  const dobDate = useMemo(() => parseDate(dob) ?? new Date(), [dob]);
+  const handleConfirmDate = useCallback(() => {
+    setDob(formatDate(tempDate));
+    setDatePickerVisible(false);
+  }, [tempDate]);
+
+  const handleCancelDate = useCallback(() => {
+    setTempDate(dobDate);
+    setDatePickerVisible(false);
+  }, [dobDate]);
 
   const countrySelector = (
     <Pressable
@@ -197,16 +206,33 @@ export default function EditProfileScreen({ navigation }: Props) {
         ))}
       </UserBottomSheet>
 
-      {/* Date Picker */}
-      {datePickerVisible && (
-        <DateTimePicker
-          value={dobDate}
-          mode="date"
-          display="spinner"
-          maximumDate={new Date()}
-          onChange={handleDateChange}
-        />
-      )}
+      {/* Date Picker Modal */}
+      <Modal
+        visible={datePickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCancelDate}
+      >
+        <View style={pickerStyles.overlay}>
+          <View style={pickerStyles.card}>
+            <View style={pickerStyles.toolbar}>
+              <Pressable onPress={handleCancelDate}>
+                <Text style={pickerStyles.toolbarBtn}>Cancel</Text>
+              </Pressable>
+              <Pressable onPress={handleConfirmDate}>
+                <Text style={[pickerStyles.toolbarBtn, pickerStyles.toolbarBtnPrimary]}>Confirm</Text>
+              </Pressable>
+            </View>
+            <DateTimePicker
+              value={tempDate}
+              mode="date"
+              display="spinner"
+              maximumDate={new Date()}
+              onChange={handleDateChange}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -292,5 +318,39 @@ const styles = StyleSheet.create({
     height: 20,
     backgroundColor: "#E8E8E8",
     marginLeft: 4,
+  },
+});
+
+const pickerStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    width: "100%",
+    alignItems: "center",
+  },
+  toolbar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+    width: "100%",
+  },
+  toolbarBtn: {
+    fontFamily: "Manrope_500Medium",
+    fontSize: 16,
+    color: "#A5A5A5",
+  },
+  toolbarBtnPrimary: {
+    color: "#6065E6",
   },
 });

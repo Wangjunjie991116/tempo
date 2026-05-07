@@ -40,7 +40,7 @@ export function UserBottomSheet({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={onClose}
     >
       <Pressable style={styles.overlay} onPress={onClose}>

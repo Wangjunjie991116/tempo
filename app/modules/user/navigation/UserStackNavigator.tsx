@@ -14,7 +14,9 @@ const UserNativeStack = createNativeStackNavigator<UserStackParamList>();
 export function UserStackNavigator() {
   const { t } = useTranslation(["common"]);
   return (
-    <UserNativeStack.Navigator>
+    <UserNativeStack.Navigator
+      initialRouteName={USER_STACK.Account}
+    >
       <UserNativeStack.Screen
         name={USER_STACK.UserHome}
         component={UserHomeScreen}

@@ -7,6 +7,7 @@ import WebTestScreen from "../WebTestScreen";
 import AccountScreen from "../screens/AccountScreen";
 import EditProfileScreen from "../screens/EditProfileScreen";
 import SettingsScreen from "../screens/SettingsScreen";
+import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 
 const UserNativeStack = createNativeStackNavigator<UserStackParamList>();
 
@@ -37,6 +38,11 @@ export function UserStackNavigator() {
       <UserNativeStack.Screen
         name={USER_STACK.Settings}
         component={SettingsScreen}
+        options={{ headerShown: false }}
+      />
+      <UserNativeStack.Screen
+        name={USER_STACK.ChangePassword}
+        component={ChangePasswordScreen}
         options={{ headerShown: false }}
       />
     </UserNativeStack.Navigator>

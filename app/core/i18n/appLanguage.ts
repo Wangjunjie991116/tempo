@@ -67,6 +67,20 @@ export async function setAppLanguage(
 }
 
 /**
+ * 获取当前 i18next 生效的语言代码。
+ *
+ * @example
+ * ```ts
+ * getAppLanguage(); // => "en" | "zh"
+ * ```
+ */
+export function getAppLanguage(): AppLanguage {
+  const lng = i18n.language;
+  if (lng === "zh") return "zh";
+  return "en";
+}
+
+/**
  * 清除 AsyncStorage 中的语言偏好。
  * 若 {@link FIXED_APP_LANGUAGE} 非空则回到该固定语言，否则按 **当前设备** 首选语言。
  */

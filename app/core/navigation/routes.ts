@@ -29,6 +29,10 @@ export const SCHEDULE_STACK = {
 export const USER_STACK = {
   UserHome: "UserHome",
   UserWebTest: "UserWebTest",
+  Account: "Account",
+  EditProfile: "EditProfile",
+  ChangePassword: "ChangePassword",
+  Settings: "Settings",
 } as const;
 
 export const LINK_PATHS = {

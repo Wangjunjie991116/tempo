@@ -62,7 +62,7 @@ export default function SettingsScreen({ navigation }: Props) {
           <AccountListItem
             variant="nav"
             icon="bell-outline"
-            title="Notifications"
+            title={t("common:notifications")}
             onPress={() => {
               // 未来实现
             }}
@@ -74,7 +74,7 @@ export default function SettingsScreen({ navigation }: Props) {
           <AccountListItem
             variant="nav"
             icon="earth"
-            title="Language"
+            title={t("common:language")}
             value={languageLabel}
             onPress={() => setLanguageSheetVisible(true)}
           />
@@ -85,8 +85,8 @@ export default function SettingsScreen({ navigation }: Props) {
           <AccountListItem
             variant="nav"
             icon="moon-waning-crescent"
-            title="Appearance"
-            value="Light"
+            title={t("common:appearance")}
+            value={t("common:light")}
             onPress={() => setAppearanceSheetVisible(true)}
           />
         </View>
@@ -95,7 +95,7 @@ export default function SettingsScreen({ navigation }: Props) {
       {/* Language BottomSheet */}
       <UserBottomSheet
         visible={languageSheetVisible}
-        title="Language"
+        title={t("common:language")}
         onClose={() => setLanguageSheetVisible(false)}
       >
         <BottomSheetItem
@@ -115,7 +115,7 @@ export default function SettingsScreen({ navigation }: Props) {
       {/* Appearance BottomSheet */}
       <UserBottomSheet
         visible={appearanceSheetVisible}
-        title="Appearance"
+        title={t("common:appearance")}
         onClose={() => setAppearanceSheetVisible(false)}
       >
         <BottomSheetItem
@@ -126,7 +126,7 @@ export default function SettingsScreen({ navigation }: Props) {
               color="#151515"
             />
           }
-          title="Light"
+          title={t("common:light")}
           selected={appearance === "light"}
           onPress={() => {
             setAppearance("light");
@@ -141,7 +141,7 @@ export default function SettingsScreen({ navigation }: Props) {
               color="#151515"
             />
           }
-          title="Dark"
+          title={t("common:dark")}
           selected={appearance === "dark"}
           disabled
           onPress={() => {

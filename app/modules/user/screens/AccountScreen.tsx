@@ -59,7 +59,7 @@ export default function AccountScreen({ navigation }: Props) {
 
         {/* Personal Info 分组 */}
         <View style={styles.group}>
-          <Text style={styles.groupTitle}>Personal Info</Text>
+          <Text style={styles.groupTitle}>{t("common:personalInfo")}</Text>
           <View style={styles.card}>
             <AccountListItem
               variant="nav"
@@ -72,7 +72,7 @@ export default function AccountScreen({ navigation }: Props) {
 
         {/* Security 分组 */}
         <View style={styles.group}>
-          <Text style={styles.groupTitle}>Security</Text>
+          <Text style={styles.groupTitle}>{t("common:security")}</Text>
           <View style={styles.card}>
             <AccountListItem
               variant="nav"
@@ -85,7 +85,7 @@ export default function AccountScreen({ navigation }: Props) {
 
         {/* Account 分组 */}
         <View style={styles.group}>
-          <Text style={styles.groupTitle}>Account</Text>
+          <Text style={styles.groupTitle}>{t("common:accountTitle")}</Text>
           <View style={styles.card}>
             <AccountListItem
               variant="action"

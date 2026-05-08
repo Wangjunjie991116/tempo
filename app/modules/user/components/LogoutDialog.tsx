@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, View, Text, Pressable, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "../../../core/i18n";
 
 export interface LogoutDialogProps {
   /** 是否显示 */
@@ -24,6 +25,8 @@ export interface LogoutDialogProps {
  * ```
  */
 export function LogoutDialog({ visible, onClose, onConfirm }: LogoutDialogProps) {
+  const { t } = useTranslation(["common"]);
+
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.overlay}>
@@ -32,17 +35,17 @@ export function LogoutDialog({ visible, onClose, onConfirm }: LogoutDialogProps)
             <MaterialCommunityIcons name="logout-variant" size={28} color="#FFFFFF" />
           </View>
 
-          <Text style={styles.title}>Log Out?</Text>
+          <Text style={styles.title}>{t("common:logOutTitle")}</Text>
           <Text style={styles.description}>
-            Your schedule data is saved locally. You can sign in again anytime.
+            {t("common:logOutDesc")}
           </Text>
 
           <Pressable style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>Close</Text>
+            <Text style={styles.closeButtonText}>{t("common:close")}</Text>
           </Pressable>
 
           <Pressable style={styles.logoutButton} onPress={onConfirm}>
-            <Text style={styles.logoutButtonText}>Logout</Text>
+            <Text style={styles.logoutButtonText}>{t("common:logOut")}</Text>
           </Pressable>
         </View>
       </View>

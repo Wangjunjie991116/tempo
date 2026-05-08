@@ -5,8 +5,6 @@ import {
   Pressable,
   StyleSheet,
   ScrollView,
-  Platform,
-  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Appbar } from "react-native-paper";
@@ -77,7 +75,7 @@ export default function EditProfileScreen({ navigation }: Props) {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
 
   const dobDate = useMemo(() => parseDate(dob) ?? new Date(), [dob]);
-  const [tempDate, setTempDate] = useState<Date>(() => parseDate(dob) ?? new Date());
+  const [tempDate, setTempDate] = useState<Date>(dobDate);
 
   const isValid = useMemo(() => {
     if (!name.trim()) return false;
@@ -90,10 +88,15 @@ export default function EditProfileScreen({ navigation }: Props) {
   const handleSave = useCallback(() => {
     Toast.show({
       type: "success",
-      text1: "Profile saved successfully",
+      text1: t("common:profileSaved"),
     });
     navigation.goBack();
   }, [navigation]);
+
+  const handleOpenDatePicker = useCallback(() => {
+    setTempDate(parseDate(dob) ?? new Date());
+    setDatePickerVisible(true);
+  }, [dob]);
 
   const handleDateChange = useCallback(
     (_event: any, selectedDate?: Date) => {
@@ -110,9 +113,8 @@ export default function EditProfileScreen({ navigation }: Props) {
   }, [tempDate]);
 
   const handleCancelDate = useCallback(() => {
-    setTempDate(dobDate);
     setDatePickerVisible(false);
-  }, [dobDate]);
+  }, []);
 
   const countrySelector = (
     <Pressable
@@ -130,7 +132,7 @@ export default function EditProfileScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       <Appbar.Header mode="small" statusBarHeight={0} style={{ backgroundColor: "#F5F5F5" }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="Edit Profile" titleStyle={styles.appBarTitle} />
+        <Appbar.Content title={t("common:editProfileTitle")} titleStyle={styles.appBarTitle} />
       </Appbar.Header>
 
       <ScrollView
@@ -148,28 +150,28 @@ export default function EditProfileScreen({ navigation }: Props) {
         </View>
 
         {/* Personal Info Label */}
-        <Text style={styles.sectionLabel}>Personal Info</Text>
+        <Text style={styles.sectionLabel}>{t("common:personalInfo")}</Text>
 
         {/* Form Card */}
         <View style={styles.formCard}>
-          <FormField label="Full Name" value={name} onChangeText={setName} />
+          <FormField label={t("common:fullNameLabel")} value={name} onChangeText={setName} />
           <FormField
-            label="Email"
+            label={t("common:emailLabel")}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
           />
           <FormField
-            label="Phone"
+            label={t("common:phoneLabel")}
             value={phone}
             onChangeText={setPhone}
             keyboardType="phone-pad"
             leftElement={countrySelector}
           />
           <FormField
-            label="Date Of Birth"
+            label={t("common:dobLabel")}
             value={dob}
-            onPress={() => setDatePickerVisible(true)}
+            onPress={handleOpenDatePicker}
             rightIcon="calendar-outline"
             editable={false}
           />
@@ -178,7 +180,7 @@ export default function EditProfileScreen({ navigation }: Props) {
 
       {/* Save Button */}
       <SaveButton
-        title="Save Changes"
+        title={t("common:saveChanges")}
         disabled={!isValid}
         onPress={handleSave}
       />
@@ -186,7 +188,7 @@ export default function EditProfileScreen({ navigation }: Props) {
       {/* Country Code BottomSheet */}
       <UserBottomSheet
         visible={countrySheetVisible}
-        title="Country Code"
+        title={t("common:countryCode")}
         onClose={() => setCountrySheetVisible(false)}
       >
         {COUNTRIES.map((country) => (
@@ -203,33 +205,28 @@ export default function EditProfileScreen({ navigation }: Props) {
         ))}
       </UserBottomSheet>
 
-      {/* Date Picker Modal */}
-      <Modal
+      {/* Date Picker BottomSheet */}
+      <UserBottomSheet
         visible={datePickerVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={handleCancelDate}
+        title={t("common:dobLabel")}
+        onClose={handleCancelDate}
       >
-        <View style={pickerStyles.overlay}>
-          <View style={pickerStyles.card}>
-            <View style={pickerStyles.toolbar}>
-              <Pressable onPress={handleCancelDate}>
-                <Text style={pickerStyles.toolbarBtn}>Cancel</Text>
-              </Pressable>
-              <Pressable onPress={handleConfirmDate}>
-                <Text style={[pickerStyles.toolbarBtn, pickerStyles.toolbarBtnPrimary]}>Confirm</Text>
-              </Pressable>
-            </View>
-            <DateTimePicker
-              value={tempDate}
-              mode="date"
-              display="spinner"
-              maximumDate={new Date()}
-              onChange={handleDateChange}
-            />
-          </View>
+        <View style={pickerStyles.toolbar}>
+          <Pressable onPress={handleCancelDate}>
+            <Text style={pickerStyles.toolbarBtn}>{t("common:cancel")}</Text>
+          </Pressable>
+          <Pressable onPress={handleConfirmDate}>
+            <Text style={[pickerStyles.toolbarBtn, pickerStyles.toolbarBtnPrimary]}>{t("common:confirm")}</Text>
+          </Pressable>
         </View>
-      </Modal>
+        <DateTimePicker
+          value={tempDate}
+          mode="date"
+          display="spinner"
+          maximumDate={new Date()}
+          onChange={handleDateChange}
+        />
+      </UserBottomSheet>
     </SafeAreaView>
   );
 }
@@ -305,21 +302,6 @@ const styles = StyleSheet.create({
 });
 
 const pickerStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-  },
-  card: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-    width: "100%",
-    alignItems: "center",
-  },
   toolbar: {
     flexDirection: "row",
     justifyContent: "space-between",

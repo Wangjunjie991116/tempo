@@ -23,7 +23,7 @@ describe("LogoutDialog", () => {
     const { getByText } = render(
       <LogoutDialog visible onClose={() => {}} onConfirm={onConfirm} />
     );
-    fireEvent.press(getByText("Logout"));
+    fireEvent.press(getByText("Log Out"));
     expect(onConfirm).toHaveBeenCalled();
   });
 });

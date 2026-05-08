@@ -102,14 +102,14 @@ export default function ChangePasswordScreen({ navigation }: Props) {
     if (newPassword !== confirmPassword) {
       Toast.show({
         type: "error",
-        text1: "Passwords do not match",
+        text1: t("common:passwordMismatch"),
       });
       return;
     }
 
     Toast.show({
       type: "success",
-      text1: "Password changed successfully",
+      text1: t("common:passwordChanged"),
     });
     navigation.goBack();
   }, [newPassword, confirmPassword, navigation]);
@@ -118,7 +118,7 @@ export default function ChangePasswordScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container}>
       <Appbar.Header mode="small" statusBarHeight={0} style={{ backgroundColor: "#F5F5F5" }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="Change Password" titleStyle={styles.appBarTitle} />
+        <Appbar.Content title={t("common:changePasswordTitle")} titleStyle={styles.appBarTitle} />
       </Appbar.Header>
 
       <ScrollView
@@ -128,40 +128,40 @@ export default function ChangePasswordScreen({ navigation }: Props) {
         {/* Form Card */}
         <View style={styles.formCard}>
           <FormField
-            label="Your password"
+            label={t("common:yourPasswordLabel")}
             value={currentPassword}
             onChangeText={setCurrentPassword}
             secureTextEntry
-            placeholder="Your password"
+            placeholder={t("common:yourPasswordLabel")}
           />
           <FormField
-            label="New password"
+            label={t("common:newPasswordLabel")}
             value={newPassword}
             onChangeText={setNewPassword}
             secureTextEntry
-            placeholder="New password"
+            placeholder={t("common:newPasswordLabel")}
           />
           <FormField
-            label="Confirm new your password"
+            label={t("common:confirmPasswordLabel")}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry
-            placeholder="Confirm new your password"
+            placeholder={t("common:confirmPasswordLabel")}
           />
 
           {/* Password Rules */}
           <View style={styles.rulesContainer}>
             <RuleItem
               satisfied={validation.minLength}
-              label="At least 8 characters"
+              label={t("common:passwordReq8Chars")}
             />
             <RuleItem
               satisfied={validation.hasNumber}
-              label="At least 1 number"
+              label={t("common:passwordReq1Number")}
             />
             <RuleItem
               satisfied={validation.hasMixedCase}
-              label="Both upper and lower case letters"
+              label={t("common:passwordReqCases")}
             />
           </View>
         </View>
@@ -169,7 +169,7 @@ export default function ChangePasswordScreen({ navigation }: Props) {
 
       {/* Save Button */}
       <SaveButton
-        title="Save Changes"
+        title={t("common:saveChanges")}
         disabled={!isValid}
         onPress={handleSave}
       />

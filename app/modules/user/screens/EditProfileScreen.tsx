@@ -9,6 +9,7 @@ import {
   Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Appbar } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import CountryFlag from "react-native-country-flag";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -127,14 +128,10 @@ export default function EditProfileScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.headerButton}>
-          <MaterialCommunityIcons name="chevron-left" size={28} color="#151515" />
-        </Pressable>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
-        <View style={styles.headerButton} />
-      </View>
+      <Appbar.Header mode="small" statusBarHeight={0} style={{ backgroundColor: "#F5F5F5" }}>
+        <Appbar.BackAction onPress={() => navigation.goBack()} />
+        <Appbar.Content title="Edit Profile" titleStyle={styles.appBarTitle} />
+      </Appbar.Header>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -242,23 +239,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F5F5F5",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-  },
-  headerButton: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTitle: {
+  appBarTitle: {
     fontFamily: "Manrope_600SemiBold",
     fontSize: 18,
-    color: "#151515",
   },
   scrollContent: {
     paddingHorizontal: 20,

@@ -2,10 +2,10 @@ import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
-  Pressable,
   StyleSheet,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Appbar } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import CountryFlag from "react-native-country-flag";
@@ -50,14 +50,10 @@ export default function SettingsScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: "#F5F5F5" }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.headerButton}>
-          <MaterialCommunityIcons name="chevron-left" size={28} color="#151515" />
-        </Pressable>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <View style={styles.headerButton} />
-      </View>
+      <Appbar.Header mode="small" statusBarHeight={0} style={{ backgroundColor: "#F5F5F5" }}>
+        <Appbar.BackAction onPress={() => navigation.goBack()} />
+        <Appbar.Content title={t("common:settingsTitle")} titleStyle={styles.appBarTitle} />
+      </Appbar.Header>
 
       {/* Content */}
       <View style={styles.content}>
@@ -161,23 +157,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-  },
-  headerButton: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTitle: {
+  appBarTitle: {
     fontFamily: "Manrope_600SemiBold",
     fontSize: 18,
-    color: "#151515",
   },
   content: {
     paddingHorizontal: 20,
@@ -192,6 +174,5 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: "#E8E8E8",
-    marginLeft: 16 + 22 + 12, // icon area offset to align with text
   },
 });

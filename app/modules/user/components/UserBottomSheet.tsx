@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Modal,
   View,
@@ -6,6 +6,8 @@ import {
   Pressable,
   StyleSheet,
   type PressableProps,
+  Animated,
+  Easing,
 } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
@@ -36,15 +38,45 @@ export function UserBottomSheet({
   onClose,
   children,
 }: UserBottomSheetProps) {
+  const [internalVisible, setInternalVisible] = useState(visible);
+  const slideAnim = useRef(new Animated.Value(300)).current;
+
+  useEffect(() => {
+    if (visible) {
+      setInternalVisible(true);
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.ease),
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: 300,
+        duration: 250,
+        useNativeDriver: true,
+        easing: Easing.in(Easing.ease),
+      }).start(() => {
+        setInternalVisible(false);
+      });
+    }
+  }, [visible]);
+
   return (
     <Modal
-      visible={visible}
+      visible={internalVisible}
       transparent
       animationType="fade"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <View style={styles.sheet}>
+      <View style={styles.overlay}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Animated.View
+          style={[
+            styles.sheet,
+            { transform: [{ translateY: slideAnim }] },
+          ]}
+        >
           <View style={styles.handleBar} />
 
           <View style={styles.header}>
@@ -55,8 +87,8 @@ export function UserBottomSheet({
           </View>
 
           {children}
-        </View>
-      </Pressable>
+        </Animated.View>
+      </View>
     </Modal>
   );
 }

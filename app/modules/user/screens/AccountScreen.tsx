@@ -7,6 +7,7 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Appbar } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useTranslation } from "../../../core/i18n";
@@ -32,14 +33,10 @@ export default function AccountScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.screenBg }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} style={styles.headerButton}>
-          <MaterialCommunityIcons name="chevron-left" size={28} color="#151515" />
-        </Pressable>
-        <Text style={styles.headerTitle}>{t("common:account")}</Text>
-        <View style={styles.headerButton} />
-      </View>
+      <Appbar.Header mode="small" statusBarHeight={0} style={{ backgroundColor: theme.screenBg }}>
+        <Appbar.BackAction onPress={() => navigation.goBack()} />
+        <Appbar.Content title={t("common:accountTitle")} titleStyle={styles.appBarTitle} />
+      </Appbar.Header>
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -116,23 +113,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-  },
-  headerButton: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTitle: {
+  appBarTitle: {
     fontFamily: "Manrope_600SemiBold",
     fontSize: 18,
-    color: "#151515",
   },
   content: {
     paddingHorizontal: 20,
@@ -149,9 +132,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   avatarPlaceholder: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: "#E8E8E8",
     alignItems: "center",
     justifyContent: "center",
@@ -184,6 +167,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
+    paddingHorizontal: 16,
     overflow: "hidden",
   },
 });

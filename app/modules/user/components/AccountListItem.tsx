@@ -4,6 +4,7 @@ import {
   Text,
   Image,
   StyleSheet,
+  View,
   type ImageSourcePropType,
   type PressableProps,
 } from "react-native";
@@ -53,24 +54,26 @@ export function AccountListItem({
       {...rest}
       style={({ pressed }) => [styles.container, pressed && onPress && styles.pressed]}
     >
+      {/* Left */}
       {variant === "profile" && avatar && (
         <Image source={avatar} style={styles.avatar} />
       )}
-
       {variant === "nav" && icon && (
         <MaterialCommunityIcons name={icon as any} size={22} color="#151515" />
       )}
 
-      <Text style={[styles.title, titleStyle]}>{title}</Text>
+      {/* Middle */}
+      <View style={[styles.middle, variant === "action" && styles.middleCenter]}>
+        <Text style={[styles.title, titleStyle, variant === "action" && styles.titleCenter]}>{title}</Text>
+        {variant === "profile" && subtitle && (
+          <Text style={styles.subtitle}>{subtitle}</Text>
+        )}
+      </View>
 
-      {variant === "profile" && subtitle && (
-        <Text style={styles.subtitle}>{subtitle}</Text>
-      )}
-
+      {/* Right */}
       {variant === "nav" && value && (
         <Text style={styles.value}>{value}</Text>
       )}
-
       {(variant === "profile" || variant === "nav") && (
         <MaterialCommunityIcons
           name="chevron-right"
@@ -87,7 +90,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 14,
-    paddingHorizontal: 16,
     gap: 12,
   },
   pressed: {
@@ -98,15 +100,26 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
   },
+  middle: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  middleCenter: {
+    alignItems: "center",
+  },
   title: {
     fontFamily: "Manrope_500Medium",
     fontSize: 16,
     color: "#151515",
   },
+  titleCenter: {
+    textAlign: "center",
+  },
   subtitle: {
     fontFamily: "Manrope_400Regular",
     fontSize: 14,
     color: "#575757",
+    marginTop: 2,
   },
   value: {
     fontFamily: "Manrope_400Regular",

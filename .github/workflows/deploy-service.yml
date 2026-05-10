@@ -60,7 +60,7 @@ jobs:
             --region ${{ secrets.SAE_REGION }} \
             --access-key-id ${{ secrets.ALIYUN_ACCESS_KEY_ID }} \
             --access-key-secret ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
+          # 使用 SAE API 部署，需要 AppId（应用 ID）
           aliyun sae DeployApplication \
-            --RegionId ${{ secrets.SAE_REGION }} \
-            --AppName ${{ secrets.SAE_APP_NAME }} \
+            --AppId ${{ secrets.SAE_APP_ID }} \
             --ImageUrl ${{ secrets.ACR_REGISTRY }}/tempo-service:${{ github.sha }}

@@ -1,0 +1,59 @@
+name: Deploy Service
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'service/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+
+env:
+  ACR_REGISTRY: ${{ secrets.ACR_REGISTRY }}
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Run backend tests
+        working-directory: service
+        run: |
+          uv sync
+          uv run pytest -v
+
+      - name: Login to Alibaba Cloud ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_REGISTRY }}
+          username: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
+          password: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./service
+          push: true
+          tags: |
+            ${{ secrets.ACR_REGISTRY }}/tempo-service:${{ github.sha }}
+            ${{ secrets.ACR_REGISTRY }}/tempo-service:latest
+
+      - name: Install Alibaba Cloud CLI
+        uses: aliyun/setup-aliyun-action@v1
+
+      - name: Deploy to SAE
+        run: |
+          aliyun sae DeployApplication \
+            --RegionId ${{ secrets.SAE_REGION }} \
+            --AppName ${{ secrets.SAE_APP_NAME }} \
+            --ImageUrl ${{ secrets.ACR_REGISTRY }}/tempo-service:${{ github.sha }}
+        env:
+          ALICLOUD_ACCESS_KEY: ${{ secrets.ALIYUN_ACCESS_KEY_ID }}
+          ALICLOUD_SECRET_KEY: ${{ secrets.ALIYUN_ACCESS_KEY_SECRET }}

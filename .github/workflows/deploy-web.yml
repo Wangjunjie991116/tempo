@@ -51,7 +51,7 @@ jobs:
           sudo mv aliyun /usr/local/bin/
 
       - name: Refresh CDN cache
-        if: ${{ secrets.CDN_DOMAIN != '' }}
+        if: ${{ vars.CDN_DOMAIN != '' }}
         continue-on-error: true
         run: |
           aliyun configure set \

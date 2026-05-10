@@ -1,0 +1,407 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Dimensions,
+  Keyboard,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+  Text,
+} from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+import { BlurView } from "expo-blur";
+import Svg, { Path } from "react-native-svg";
+
+const SCREEN_WIDTH = Dimensions.get("window").width;
+const LINE_HEIGHT = 22;
+const MIN_LINES = 2;
+const MAX_LINES = 4;
+const MIN_HEIGHT = LINE_HEIGHT * MIN_LINES + 28;
+const MAX_HEIGHT = LINE_HEIGHT * MAX_LINES + 28;
+
+/** 气泡底缘与键盘顶缘之间的呼吸距离（默认取 space.md = 16）。 */
+const DEFAULT_KEYBOARD_GAP = 16;
+/** iOS 键盘缓动曲线的近似（减速感更强，匹配系统气韵）。 */
+const KEYBOARD_EASING = Easing.bezier(0.17, 0.59, 0.4, 0.77);
+
+export type VoiceBubbleProps = {
+  visible: boolean;
+  text: string;
+  mode: "recording" | "preview";
+  onSend: (text: string) => void;
+  onCancel: () => void;
+  theme: {
+    surfaceElevated: string;
+    textPrimary: string;
+    textMuted: string;
+    brand: string;
+    divider: string;
+  };
+  /** 气泡底缘与键盘顶缘之间的空隙，单位 px；默认 `DEFAULT_KEYBOARD_GAP` (16)。 */
+  keyboardGap?: number;
+};
+
+function CancelIcon({ color }: { color: string }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M18 6L6 18M6 6l12 12"
+        stroke={color}
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function SendIcon() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"
+        fill="#fff"
+        stroke="#fff"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+export function VoiceBubble({
+  visible,
+  text,
+  mode,
+  onSend,
+  onCancel,
+  theme,
+  keyboardGap = DEFAULT_KEYBOARD_GAP,
+}: VoiceBubbleProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editableText, setEditableText] = useState(text);
+  const inputRef = useRef<TextInput>(null);
+  const containerRef = useRef<View>(null);
+  const bubbleOpacity = useSharedValue(0);
+  const bubbleScale = useSharedValue(0.85);
+  const bubbleTranslateY = useSharedValue(20);
+  /** 键盘抬起时 translateY 的叠加位移（负值代表向上抬升）。 */
+  const keyboardLift = useSharedValue(0);
+  /**
+   * 缓存气泡"未被键盘抬起时"的屏幕底缘。避免键盘已抬起时 measure 拿到的
+   * 是已位移后的位置，导致二次计算出错。
+   */
+  const restBottomRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    setEditableText(text);
+  }, [text]);
+
+  useEffect(() => {
+    if (visible) {
+      bubbleOpacity.value = withTiming(1, { duration: 200 });
+      bubbleScale.value = withSpring(1, { damping: 18, stiffness: 220 });
+      bubbleTranslateY.value = withSpring(0, { damping: 18, stiffness: 220 });
+    } else {
+      bubbleOpacity.value = withTiming(0, { duration: 150 });
+      bubbleScale.value = withTiming(0.85, { duration: 150 });
+      bubbleTranslateY.value = withTiming(20, { duration: 150 });
+      keyboardLift.value = withTiming(0, { duration: 150 });
+      restBottomRef.current = null;
+      setIsEditing(false);
+    }
+  }, [visible, bubbleOpacity, bubbleScale, bubbleTranslateY, keyboardLift]);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    /**
+     * 根据键盘"目标 frame"重新计算并动画抬升量。
+     * - `keyboardScreenY` 即键盘顶缘在屏幕中的 y 坐标（iOS `keyboardWillChangeFrame`
+     *   的 `endCoordinates.screenY` 给出），键盘隐藏时该值等于屏幕高度。
+     * - Android 回退到 `windowHeight - endCoordinates.height`。
+     */
+    const animateToKeyboardTop = (keyboardScreenY: number, duration: number) => {
+      // 仅在有确定 rest 底缘时可算；首次事件会在 measure 回调内填好。
+      const restBottom = restBottomRef.current;
+      if (restBottom == null) return;
+      const overflow = restBottom + keyboardGap - keyboardScreenY;
+      const target = overflow > 0 ? -overflow : 0;
+      keyboardLift.value = withTiming(target, { duration, easing: KEYBOARD_EASING });
+    };
+
+    /** 首次事件时，用 measureInWindow 取气泡当前屏幕底缘并减去已有抬升量，得到 rest 底缘。 */
+    const ensureRestMeasured = (onReady: () => void) => {
+      if (restBottomRef.current != null) {
+        onReady();
+        return;
+      }
+      containerRef.current?.measureInWindow((_x, y, _w, h) => {
+        restBottomRef.current = y + h - keyboardLift.value;
+        onReady();
+      });
+    };
+
+    if (Platform.OS === "ios") {
+      // 单一事件源：IME 同尺寸切换（9 键 ↔ 26 键）不会触发 change-frame，天然避免 hide→show 伪切换。
+      const sub = Keyboard.addListener("keyboardWillChangeFrame", (e) => {
+        const endY = e.endCoordinates?.screenY;
+        if (endY == null) return;
+        const duration = (e as unknown as { duration?: number }).duration ?? 250;
+        ensureRestMeasured(() => animateToKeyboardTop(endY, duration));
+      });
+      return () => sub.remove();
+    }
+
+    // Android：没有 will-change-frame，用 did-show / did-hide。
+    const windowHeight = Dimensions.get("window").height;
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
+      const kbHeight = e.endCoordinates?.height ?? 0;
+      if (kbHeight <= 0) return;
+      ensureRestMeasured(() => animateToKeyboardTop(windowHeight - kbHeight, 220));
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      ensureRestMeasured(() => animateToKeyboardTop(windowHeight, 200));
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [visible, keyboardGap, keyboardLift]);
+
+  const handleBubblePress = useCallback(() => {
+    if (mode === "preview" && !isEditing) {
+      setIsEditing(true);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [mode, isEditing]);
+
+  const handleSend = useCallback(() => {
+    const finalText = editableText.trim();
+    if (finalText) {
+      onSend(finalText);
+    }
+  }, [editableText, onSend]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: bubbleOpacity.value,
+    transform: [
+      { scale: bubbleScale.value },
+      { translateY: bubbleTranslateY.value + keyboardLift.value },
+    ],
+  }));
+
+  if (!visible) return null;
+
+  return (
+    <Animated.View ref={containerRef} style={[styles.container, animatedStyle]}>
+      {Platform.OS === "ios" ? (
+        <BlurView
+          intensity={40}
+          tint="dark"
+          style={styles.blurContainer}
+        >
+          <View style={[styles.bubbleInner, { backgroundColor: "rgba(255,255,255,0.08)" }]}>
+            <Pressable onPress={handleBubblePress} style={styles.bubbleContent}>
+              {isEditing ? (
+                <TextInput
+                  ref={inputRef}
+                  style={[styles.input, { color: "#fff" }]}
+                  value={editableText}
+                  onChangeText={setEditableText}
+                  multiline
+                  autoFocus
+                  placeholder="编辑内容..."
+                  placeholderTextColor="rgba(255,255,255,0.4)"
+                />
+              ) : (
+                <ScrollView
+                  style={styles.scrollView}
+                  contentContainerStyle={styles.scrollContent}
+                  nestedScrollEnabled
+                >
+                  <Text style={[styles.text, { color: "#fff" }]}>
+                    {text || "正在聆听..."}
+                  </Text>
+                </ScrollView>
+              )}
+            </Pressable>
+
+            {mode === "preview" && (
+              <View style={styles.buttonRow}>
+                <Pressable
+                  onPress={onCancel}
+                  style={({ pressed }) => [
+                    styles.button,
+                    styles.buttonCancel,
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}
+                >
+                  <CancelIcon color="rgba(255,255,255,0.7)" />
+                  <Text style={[styles.buttonText, { color: "rgba(255,255,255,0.7)" }]}>
+                    取消
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleSend}
+                  style={({ pressed }) => [
+                    styles.button,
+                    styles.buttonSend,
+                    { opacity: pressed ? 0.85 : 1 },
+                  ]}
+                >
+                  <SendIcon />
+                  <Text style={[styles.buttonText, { color: "#fff" }]}>发送</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </BlurView>
+      ) : (
+        <View style={[styles.bubbleInner, { backgroundColor: "#1a1a2e" }]}>
+          <Pressable onPress={handleBubblePress} style={styles.bubbleContent}>
+            {isEditing ? (
+              <TextInput
+                ref={inputRef}
+                style={[styles.input, { color: "#fff" }]}
+                value={editableText}
+                onChangeText={setEditableText}
+                multiline
+                autoFocus
+                placeholder="编辑内容..."
+                placeholderTextColor="rgba(255,255,255,0.4)"
+              />
+            ) : (
+              <ScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+                nestedScrollEnabled
+              >
+                <Text style={[styles.text, { color: "#fff" }]}>
+                  {text || "正在聆听..."}
+                </Text>
+              </ScrollView>
+            )}
+          </Pressable>
+
+          {mode === "preview" && (
+            <View style={styles.buttonRow}>
+              <Pressable
+                onPress={onCancel}
+                style={({ pressed }) => [
+                  styles.button,
+                  styles.buttonCancel,
+                  { opacity: pressed ? 0.6 : 1 },
+                ]}
+              >
+                <CancelIcon color="rgba(255,255,255,0.7)" />
+                <Text style={[styles.buttonText, { color: "rgba(255,255,255,0.7)" }]}>
+                  取消
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleSend}
+                style={({ pressed }) => [
+                  styles.button,
+                  styles.buttonSend,
+                  { opacity: pressed ? 0.85 : 1 },
+                ]}
+              >
+                <SendIcon />
+                <Text style={[styles.buttonText, { color: "#fff" }]}>发送</Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
+      )}
+    </Animated.View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    position: "absolute",
+    bottom: 110,
+    left: 16,
+    right: 16,
+    borderRadius: 20,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  blurContainer: {
+    borderRadius: 20,
+    overflow: "hidden",
+  },
+  bubbleInner: {
+    borderRadius: 20,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  bubbleContent: {
+    minHeight: MIN_HEIGHT,
+    maxHeight: MAX_HEIGHT,
+    padding: 14,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+  },
+  text: {
+    fontFamily: "Manrope_500Medium",
+    fontSize: 16,
+    lineHeight: LINE_HEIGHT,
+    letterSpacing: 0.2,
+  },
+  input: {
+    flex: 1,
+    fontFamily: "Manrope_500Medium",
+    fontSize: 16,
+    lineHeight: LINE_HEIGHT,
+    textAlignVertical: "top",
+    padding: 0,
+    letterSpacing: 0.2,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.1)",
+  },
+  button: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+  },
+  buttonCancel: {
+    backgroundColor: "transparent",
+    borderRightWidth: 1,
+    borderRightColor: "rgba(255,255,255,0.1)",
+  },
+  buttonSend: {
+    backgroundColor: "#6065e6",
+  },
+  buttonText: {
+    fontFamily: "Manrope_600SemiBold",
+    fontSize: 15,
+    letterSpacing: 0.3,
+  },
+});

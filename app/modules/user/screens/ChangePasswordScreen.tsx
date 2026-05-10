@@ -1,0 +1,232 @@
+import React, { useState, useMemo, useCallback } from "react";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  ScrollView,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Appbar } from "react-native-paper";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useTranslation } from "../../../core/i18n";
+import { USER_STACK } from "../../../core/navigation/routes";
+import type { UserStackParamList } from "../../../core/navigation/types";
+import { Toast } from "../../../core/ui";
+import { FormField } from "../components/FormField";
+import { SaveButton } from "../components/SaveButton";
+
+type Props = NativeStackScreenProps<UserStackParamList, typeof USER_STACK.ChangePassword>;
+
+interface PasswordValidation {
+  minLength: boolean;
+  hasNumber: boolean;
+  hasMixedCase: boolean;
+}
+
+function validatePassword(password: string): PasswordValidation {
+  return {
+    minLength: password.length >= 8,
+    hasNumber: /\d/.test(password),
+    hasMixedCase: /[a-z]/.test(password) && /[A-Z]/.test(password),
+  };
+}
+
+function RuleItem({
+  satisfied,
+  label,
+}: {
+  satisfied: boolean;
+  label: string;
+}) {
+  return (
+    <View style={styles.ruleRow}>
+      <View
+        style={[
+          styles.ruleDot,
+          satisfied ? styles.ruleDotSatisfied : styles.ruleDotUnsatisfied,
+        ]}
+      >
+        {satisfied && (
+          <MaterialCommunityIcons
+            name="check"
+            size={14}
+            color="#FFFFFF"
+          />
+        )}
+      </View>
+      <Text
+        style={[
+          styles.ruleText,
+          satisfied ? styles.ruleTextSatisfied : styles.ruleTextUnsatisfied,
+        ]}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+/**
+ * 修改密码页（Change Password）。
+ *
+ * 包含当前密码、新密码、确认新密码输入，以及密码规则校验列表。
+ * 所有规则满足且输入非空后可保存，保存成功后返回上一页。
+ */
+export default function ChangePasswordScreen({ navigation }: Props) {
+  const { t } = useTranslation(["common"]);
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const validation = useMemo(
+    () => validatePassword(newPassword),
+    [newPassword],
+  );
+
+  const allRulesSatisfied = useMemo(
+    () => validation.minLength && validation.hasNumber && validation.hasMixedCase,
+    [validation],
+  );
+
+  const isValid = useMemo(() => {
+    if (!currentPassword.trim()) return false;
+    if (!newPassword.trim()) return false;
+    if (!confirmPassword.trim()) return false;
+    return allRulesSatisfied;
+  }, [currentPassword, newPassword, confirmPassword, allRulesSatisfied]);
+
+  const handleSave = useCallback(() => {
+    if (newPassword !== confirmPassword) {
+      Toast.show({
+        type: "error",
+        text1: t("common:passwordMismatch"),
+      });
+      return;
+    }
+
+    Toast.show({
+      type: "success",
+      text1: t("common:passwordChanged"),
+    });
+    navigation.goBack();
+  }, [newPassword, confirmPassword, navigation]);
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <Appbar.Header mode="small" statusBarHeight={0} style={{ backgroundColor: "#F5F5F5" }}>
+        <Appbar.BackAction onPress={() => navigation.goBack()} />
+        <Appbar.Content title={t("common:changePasswordTitle")} titleStyle={styles.appBarTitle} />
+      </Appbar.Header>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Form Card */}
+        <View style={styles.formCard}>
+          <FormField
+            label={t("common:yourPasswordLabel")}
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+            secureTextEntry
+            placeholder={t("common:yourPasswordLabel")}
+          />
+          <FormField
+            label={t("common:newPasswordLabel")}
+            value={newPassword}
+            onChangeText={setNewPassword}
+            secureTextEntry
+            placeholder={t("common:newPasswordLabel")}
+          />
+          <FormField
+            label={t("common:confirmPasswordLabel")}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            placeholder={t("common:confirmPasswordLabel")}
+          />
+
+          {/* Password Rules */}
+          <View style={styles.rulesContainer}>
+            <RuleItem
+              satisfied={validation.minLength}
+              label={t("common:passwordReq8Chars")}
+            />
+            <RuleItem
+              satisfied={validation.hasNumber}
+              label={t("common:passwordReq1Number")}
+            />
+            <RuleItem
+              satisfied={validation.hasMixedCase}
+              label={t("common:passwordReqCases")}
+            />
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Save Button */}
+      <SaveButton
+        title={t("common:saveChanges")}
+        disabled={!isValid}
+        onPress={handleSave}
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#F5F5F5",
+  },
+  appBarTitle: {
+    fontFamily: "Manrope_600SemiBold",
+    fontSize: 18,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  formCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    gap: 16,
+  },
+  rulesContainer: {
+    marginTop: 4,
+    gap: 8,
+  },
+  ruleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  ruleDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ruleDotUnsatisfied: {
+    backgroundColor: "#E8E8E8",
+  },
+  ruleDotSatisfied: {
+    backgroundColor: "#17B26A",
+  },
+  ruleText: {
+    fontFamily: "Manrope_400Regular",
+    fontSize: 14,
+  },
+  ruleTextUnsatisfied: {
+    color: "#A5A5A5",
+  },
+  ruleTextSatisfied: {
+    color: "#151515",
+  },
+});

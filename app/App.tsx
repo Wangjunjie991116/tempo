@@ -1,3 +1,4 @@
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   Manrope_400Regular,
   Manrope_500Medium,
@@ -45,18 +46,20 @@ export default function App() {
   if (!fontsLoaded) return null;
 
   return (
-    <TempoThemeProvider>
-      <SafeAreaProvider>
-        <ToastProvider>
-          <SessionProvider>
-            <NavigationContainer ref={navigationRef} linking={tempoLinking}>
-              <StatusBar style="dark" />
-              <RootNavigator />
-              <AuthNavigationSync />
-            </NavigationContainer>
-          </SessionProvider>
-        </ToastProvider>
-      </SafeAreaProvider>
-    </TempoThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <TempoThemeProvider>
+        <SafeAreaProvider>
+          <ToastProvider>
+            <SessionProvider>
+              <NavigationContainer ref={navigationRef} linking={tempoLinking}>
+                <StatusBar style="dark" />
+                <RootNavigator />
+                <AuthNavigationSync />
+              </NavigationContainer>
+            </SessionProvider>
+          </ToastProvider>
+        </SafeAreaProvider>
+      </TempoThemeProvider>
+    </GestureHandlerRootView>
   );
 }

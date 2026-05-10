@@ -12,6 +12,10 @@ export type ScheduleStackParamList = {
 export type UserStackParamList = {
   [USER_STACK.UserHome]: undefined;
   [USER_STACK.UserWebTest]: undefined;
+  [USER_STACK.Account]: undefined;
+  [USER_STACK.EditProfile]: undefined;
+  [USER_STACK.ChangePassword]: undefined;
+  [USER_STACK.Settings]: undefined;
 };
 
 export type MainStackParamList = {

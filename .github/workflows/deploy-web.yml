@@ -6,6 +6,7 @@ on:
     paths:
       - 'web/**'
       - 'pnpm-lock.yaml'
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:

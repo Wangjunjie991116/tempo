@@ -86,5 +86,8 @@
   "saveChanges": "保存更改",
   "security": "安全",
   "settingsTitle": "设置",
+  "scheduleViewStyle": "日程风格",
+  "scheduleViewCard": "卡片",
+  "scheduleViewTimeline": "时间线",
   "yourPasswordLabel": "当前密码"
 }

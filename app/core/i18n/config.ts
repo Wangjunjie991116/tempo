@@ -28,7 +28,7 @@ export const resources = {
   },
 } as const;
 
-const fallbackLng = "en";
+const fallbackLng = "zh";
 
 /**
  * 设备首选语言为中文（含 zh-Hans / zh-Hant）时使用 `zh`，否则 **默认英文** `en`。

@@ -86,5 +86,8 @@
   "saveChanges": "Save Changes",
   "security": "Security",
   "settingsTitle": "Settings",
+  "scheduleViewStyle": "Schedule View",
+  "scheduleViewCard": "Card",
+  "scheduleViewTimeline": "Timeline",
   "yourPasswordLabel": "Your password"
 }

@@ -5,7 +5,9 @@ import { useTranslation } from "../../../core/i18n";
 import { useTempoTheme } from "../../../core/theme";
 import { partitionScheduleForDay } from "../repo/schedulePartition";
 import type { ScheduleItem } from "../repo/types";
+import { useScheduleViewStyle } from "../hooks/useScheduleViewStyle";
 import { ScheduleCard } from "./ScheduleCard";
+import { ScheduleCompactDayPage } from "./ScheduleCompactDayPage";
 import { ScheduleSectionHeader } from "./ScheduleSectionHeader";
 import { ScheduleTimelineRail } from "./ScheduleTimelineRail";
 
@@ -24,6 +26,7 @@ export function ScheduleDayPage({
 }: Props) {
   const t = useTempoTheme();
   const { t: tr } = useTranslation(["schedule"]);
+  const { style: viewStyle } = useScheduleViewStyle();
 
   const { upcoming, finished } = useMemo(
     () => partitionScheduleForDay(allItems, day),
@@ -47,6 +50,19 @@ export function ScheduleDayPage({
     [tr, finished.length],
   );
 
+  /** 时间线类型视图（类 iOS 风格） */
+  if (viewStyle === "timeline") {
+    return (
+      <ScheduleCompactDayPage
+        day={day}
+        allItems={allItems}
+        horizontalPadding={horizontalPadding}
+        onCardPress={onCardPress}
+      />
+    );
+  }
+
+  /** 卡片类型视图（原时间轴列表风格） */
   return (
     <ScrollView
       nestedScrollEnabled

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,11 @@ import { getAppLanguage, setAppLanguage } from "../../../core/i18n/appLanguage";
 import { USER_STACK } from "../../../core/navigation/routes";
 import type { UserStackParamList } from "../../../core/navigation/types";
 import { useTempoTheme } from "../../../core/theme";
+import {
+  bootstrapScheduleViewStyle,
+  setScheduleViewStyle,
+  type ScheduleViewStyle,
+} from "../../../core/preference/scheduleViewPreference";
 import { AccountListItem } from "../components/AccountListItem";
 import { UserBottomSheet, BottomSheetItem } from "../components/UserBottomSheet";
 import type { AppLanguage } from "../../../core/i18n";
@@ -23,8 +28,8 @@ type Props = NativeStackScreenProps<UserStackParamList, typeof USER_STACK.Settin
 /**
  * 通用设置页（Settings）。
  *
- * 包含 Notifications、Language、Appearance 三个选项，
- * Language 与 Appearance 点击后唤起底部弹窗。
+ * 包含 Notifications、Language、Appearance、Schedule View Style 四个选项，
+ * Language、Appearance 与 Schedule View Style 点击后唤起底部弹窗。
  */
 export default function SettingsScreen({ navigation }: Props) {
   const { t, i18n } = useTranslation(["common"]);
@@ -32,10 +37,19 @@ export default function SettingsScreen({ navigation }: Props) {
 
   const [languageSheetVisible, setLanguageSheetVisible] = useState(false);
   const [appearanceSheetVisible, setAppearanceSheetVisible] = useState(false);
+  const [scheduleViewSheetVisible, setScheduleViewSheetVisible] = useState(false);
+
   const [currentLang, setCurrentLang] = useState<AppLanguage>(
     (getAppLanguage?.() as AppLanguage) ?? i18n.language ?? "en",
   );
   const [appearance, setAppearance] = useState<"light" | "dark">("light");
+  const [scheduleViewStyle, setScheduleViewStyleState] = useState<ScheduleViewStyle>("timeline");
+
+  useEffect(() => {
+    bootstrapScheduleViewStyle().then((s) => {
+      setScheduleViewStyleState(s);
+    });
+  }, []);
 
   const handleLanguageChange = useCallback(
     async (lang: AppLanguage) => {
@@ -46,7 +60,20 @@ export default function SettingsScreen({ navigation }: Props) {
     [],
   );
 
+  const handleScheduleViewChange = useCallback(
+    async (style: ScheduleViewStyle) => {
+      await setScheduleViewStyle(style);
+      setScheduleViewStyleState(style);
+      setScheduleViewSheetVisible(false);
+    },
+    [],
+  );
+
   const languageLabel = currentLang === "zh" ? "中文" : "English";
+  const scheduleViewLabel =
+    scheduleViewStyle === "timeline"
+      ? t("common:scheduleViewTimeline")
+      : t("common:scheduleViewCard");
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: "#F5F5F5" }]}>
@@ -89,6 +116,17 @@ export default function SettingsScreen({ navigation }: Props) {
             value={t("common:light")}
             onPress={() => setAppearanceSheetVisible(true)}
           />
+
+          <View style={styles.divider} />
+
+          {/* Schedule View Style */}
+          <AccountListItem
+            variant="nav"
+            icon="calendar-clock"
+            title={t("common:scheduleViewStyle")}
+            value={scheduleViewLabel}
+            onPress={() => setScheduleViewSheetVisible(true)}
+          />
         </View>
       </View>
 
@@ -99,16 +137,16 @@ export default function SettingsScreen({ navigation }: Props) {
         onClose={() => setLanguageSheetVisible(false)}
       >
         <BottomSheetItem
-          icon={<CountryFlag isoCode="gb" size={22} />}
-          title="English"
-          selected={currentLang === "en"}
-          onPress={() => handleLanguageChange("en")}
-        />
-        <BottomSheetItem
           icon={<CountryFlag isoCode="cn" size={22} />}
           title="中文"
           selected={currentLang === "zh"}
           onPress={() => handleLanguageChange("zh")}
+        />
+        <BottomSheetItem
+          icon={<CountryFlag isoCode="gb" size={22} />}
+          title="English"
+          selected={currentLang === "en"}
+          onPress={() => handleLanguageChange("en")}
         />
       </UserBottomSheet>
 
@@ -147,6 +185,38 @@ export default function SettingsScreen({ navigation }: Props) {
           onPress={() => {
             // disabled，不响应
           }}
+        />
+      </UserBottomSheet>
+
+      {/* Schedule View Style BottomSheet */}
+      <UserBottomSheet
+        visible={scheduleViewSheetVisible}
+        title={t("common:scheduleViewStyle")}
+        onClose={() => setScheduleViewSheetVisible(false)}
+      >
+        <BottomSheetItem
+          icon={
+            <MaterialCommunityIcons
+              name="view-grid-outline"
+              size={22}
+              color="#151515"
+            />
+          }
+          title={t("common:scheduleViewCard")}
+          selected={scheduleViewStyle === "card"}
+          onPress={() => handleScheduleViewChange("card")}
+        />
+        <BottomSheetItem
+          icon={
+            <MaterialCommunityIcons
+              name="timeline-text"
+              size={22}
+              color="#151515"
+            />
+          }
+          title={t("common:scheduleViewTimeline")}
+          selected={scheduleViewStyle === "timeline"}
+          onPress={() => handleScheduleViewChange("timeline")}
         />
       </UserBottomSheet>
     </SafeAreaView>

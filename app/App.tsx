@@ -11,6 +11,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { bootstrapAppLanguage } from "./core/i18n";
+import { bootstrapScheduleViewStyle } from "./core/preference/scheduleViewPreference";
 import { TempoThemeProvider } from "./core/theme";
 import { enableAndroidLayoutAnimationExperimental } from "./core/ui/layoutAnimation";
 import {
@@ -39,6 +40,7 @@ export default function App() {
     if (!fontsLoaded) return;
     void (async () => {
       await bootstrapAppLanguage();
+      await bootstrapScheduleViewStyle();
       await SplashScreen.hideAsync();
     })();
   }, [fontsLoaded]);

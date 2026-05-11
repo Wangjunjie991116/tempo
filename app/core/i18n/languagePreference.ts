@@ -6,5 +6,5 @@
  */
 export type AppLanguage = "en" | "zh";
 
-/** 当前写死为英文；改为 `null` 即可恢复自动（存储 → 设备）。 */
-export const FIXED_APP_LANGUAGE: AppLanguage | null = "en";
+/** 设为 `null` 恢复自动：存储 → 设备 → 中文（fallback）。 */
+export const FIXED_APP_LANGUAGE: AppLanguage | null = null;
